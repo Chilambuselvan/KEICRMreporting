@@ -14,6 +14,7 @@ library(tidyr)
 library(dplyr)
 library(plotly)
 library(RColorBrewer)
+library(threejs)
 #options(java.parameters = "-Xmx1024m" )
 library(shiny)
 
@@ -38,7 +39,7 @@ if (FALSE){
   {
     OppClosed$Load=as.numeric(OppClosed$`Capacity/Inclination`,rm.na=TRUE)*100
   }
- 
+ Regionpal=c("azure4", "deepskyblue2", "darkolivegreen2", "darkorange1")
 }
 # Define UI for application that draws a histogram
 shinyUI(
@@ -47,7 +48,8 @@ shinyUI(
     dashboardSidebar(
       sidebarMenu(
         menuItem("Dashboard", tabName = "dashboard", icon = icon("dashboard")),
-        menuItem("Market Analysis", tabName = "widgets", icon = icon("th"))
+        menuItem("Market Analysis", tabName = "widgets", icon = icon("balance-scale")),
+        menuItem("Market Analysis 3D", tabName = "3Dview", icon = icon("bars"))
        # menuItem("Closed opportunities", tabName = "widgets2", icon = icon("th"))
       )
     ),
@@ -89,9 +91,15 @@ shinyUI(
                   box(title = "COMPETITOR MARKET",
                     plotlyOutput("LoadvsSpeedPlotLost", height = 350),width=12,status = "danger", solidHeader = TRUE,collapsible = TRUE,collapsed = TRUE)
                 )
-        )
+        ),# Second tab content ends
+        # Second tab content
+        tabItem(tabName = "3Dview",
+              fluidRow(
+                  box(title = "3D view MARKET",width=12,status = "info", solidHeader = TRUE,collapsible = TRUE,collapsed = FALSE,
+                      scatterplotThreeOutput("LoadvsSpeedPlot3js"))
+                )
+        )# Second tab content ends
       )
-      
     )#dashboard Body Close
   )#dashboard page close
   

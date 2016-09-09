@@ -34,6 +34,12 @@ shinyServer(function(input, output) {
        group_by(Region,Load,Speed)%>%
        summarise(cnt=sum(Lost))
    })
+   reactdataQVT=reactive({
+     subconL_S=OppClosed%>%
+       #filter(Market.segment==input$MarSegChoose)%>%
+       group_by(`Floors/Travel/Rise`,Load,Speed,Region)%>%
+       summarise(cnt=n())
+   })
    
    reactdataConSum = reactive({
      subcon1=OppClosed%>%
@@ -69,18 +75,38 @@ shinyServer(function(input, output) {
    })
    ################################ Analysis I TAB ########################  
    output$LoadvsSpeedPlotMkt<- renderPlotly({
-     pal <- RColorBrewer::brewer.pal(nlevels(OppClosed$Region), "Set1")
+   
      plot_ly(data = reactdataLoadvsSpeedMkt(), x = Load, y = Speed,mode = "markers",
-             marker=list(size=cnt),color = Region,colors = pal) 
+             marker=list(size=cnt),color = Region,colors = Regionpal) 
    })
    output$LoadvsSpeedPlot<- renderPlotly({
-     pal <- RColorBrewer::brewer.pal(nlevels(OppClosed$Region), "Set1")
+     
          plot_ly(data = reactdataLoadvsSpeed(), x = Load, y = Speed,mode = "markers",
-           marker=list(size=cnt),color = Region,colors = pal) 
+           marker=list(size=cnt),color = Region,colors = Regionpal) 
      })
    output$LoadvsSpeedPlotLost<- renderPlotly({
-     pal <- RColorBrewer::brewer.pal(nlevels(OppClosed$Region), "Set1")
+    
      plot_ly(data = reactdataLoadvsSpeedLost(), x = Load, y = Speed,mode = "markers",
-             marker=list(size=cnt),color = Region,colors = pal) 
+             marker=list(size=cnt),color = Region,colors = Regionpal) 
+     
+   })
+   output$LoadvsSpeedPlot3D <- renderPlotly({
+     
+   plot_ly(data = reactdataQVT(), x = Load, y = Speed, z=`Floors/Travel/Rise`,
+           type="scatter3d", mode="markers",color = Region,colors = Regionpal)
+   })
+   
+   output$LoadvsSpeedPlot3js <- renderScatterplotThree({
+     subconL_S=OppClosed%>%
+       #filter(Market.segment==input$MarSegChoose)%>%
+       group_by(`Floors/Travel/Rise`,Load,Speed,Region)%>%
+       summarise(cnt=n())
+     scatterplot3js(x = as.numeric(subconL_S$Load), 
+                    y = as.numeric(subconL_S$Speed), 
+                    z=as.numeric(subconL_S$`Floors/Travel/Rise`),
+                    color=rainbow(length(subconL_S$Region)),
+                    size= subconL_S$cnt
+                    )
+  
    })
 })
