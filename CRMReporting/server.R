@@ -16,6 +16,24 @@ shinyServer(function(input, output) {
      subcon=OppClosed%>%
        filter(Market.segment==input$MarSegChoose)
   })
+   reactdataLoadvsSpeedMkt=reactive({
+     subconL_S=OppClosed%>%
+       #filter(Market.segment==input$MarSegChoose)%>%
+       group_by(Region,Load,Speed)%>%
+       summarise(cnt=n())
+   })
+   reactdataLoadvsSpeed=reactive({
+     subconL_S=OppClosed%>%
+       #filter(Market.segment==input$MarSegChoose)%>%
+       group_by(Region,Load,Speed)%>%
+       summarise(cnt=sum(Won))
+   })
+   reactdataLoadvsSpeedLost=reactive({
+     subconL_S=OppClosed%>%
+       #filter(Market.segment==input$MarSegChoose)%>%
+       group_by(Region,Load,Speed)%>%
+       summarise(cnt=sum(Lost))
+   })
    
    reactdataConSum = reactive({
      subcon1=OppClosed%>%
@@ -48,7 +66,21 @@ shinyServer(function(input, output) {
                showlegend=FALSE,hoverinfo="none")%>%
       layout(xaxis=list(title = "Region"),yaxis=list(title = "Quantity"))%>%
        layout(title="Opportunity Won Region Wise")
-     #rm(subdf)
    })
-  
+   ################################ Analysis I TAB ########################  
+   output$LoadvsSpeedPlotMkt<- renderPlotly({
+     pal <- RColorBrewer::brewer.pal(nlevels(OppClosed$Region), "Set1")
+     plot_ly(data = reactdataLoadvsSpeedMkt(), x = Load, y = Speed,mode = "markers",
+             marker=list(size=cnt),color = Region,colors = pal) 
+   })
+   output$LoadvsSpeedPlot<- renderPlotly({
+     pal <- RColorBrewer::brewer.pal(nlevels(OppClosed$Region), "Set1")
+         plot_ly(data = reactdataLoadvsSpeed(), x = Load, y = Speed,mode = "markers",
+           marker=list(size=cnt),color = Region,colors = pal) 
+     })
+   output$LoadvsSpeedPlotLost<- renderPlotly({
+     pal <- RColorBrewer::brewer.pal(nlevels(OppClosed$Region), "Set1")
+     plot_ly(data = reactdataLoadvsSpeedLost(), x = Load, y = Speed,mode = "markers",
+             marker=list(size=cnt),color = Region,colors = pal) 
+   })
 })

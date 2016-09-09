@@ -13,6 +13,7 @@ library(openxlsx)
 library(tidyr)
 library(dplyr)
 library(plotly)
+library(RColorBrewer)
 #options(java.parameters = "-Xmx1024m" )
 library(shiny)
 
@@ -24,9 +25,21 @@ if (FALSE){
                         detectDates = TRUE,rowNames = FALSE)
   ClosedMarketSeg=unique(OppClosed$Market.segment)
   OppClosed$Won=ifelse(OppClosed$Stage=="Order Received (Won)",1,0)
-  
+  OppClosed$Lost=ifelse(OppClosed$Stage=="Order Received (Won)",0,1)
+  if (grepl("*T*",OppClosed$`Capacity/Inclination`,ignore.case = TRUE)==TRUE)
+  {
+    OppClosed$Load=as.numeric(sub("T", "e3", OppClosed$`Capacity/Inclination`, fixed = TRUE))
+  }
+  if (grepl("*K*",OppClosed$`Capacity/Inclination`,ignore.case = TRUE)==TRUE)
+  {
+    OppClosed$Load=as.numeric(sub("K", "e3", OppClosed$`Capacity/Inclination`, fixed = TRUE))
+  }
+  if (OppClosed$Load<1000)
+  {
+    OppClosed$Load=as.numeric(OppClosed$`Capacity/Inclination`,rm.na=TRUE)*100
+  }
+ 
 }
-
 # Define UI for application that draws a histogram
 shinyUI(
   dashboardPage(
@@ -34,7 +47,7 @@ shinyUI(
     dashboardSidebar(
       sidebarMenu(
         menuItem("Dashboard", tabName = "dashboard", icon = icon("dashboard")),
-        menuItem("OPEN opportunities", tabName = "widgets", icon = icon("th"))
+        menuItem("Market Analysis", tabName = "widgets", icon = icon("th"))
        # menuItem("Closed opportunities", tabName = "widgets2", icon = icon("th"))
       )
     ),
@@ -64,7 +77,18 @@ shinyUI(
         
         # Second tab content
         tabItem(tabName = "widgets",
-                h2("Widgets tab content")
+                fluidRow(
+                  box(title="OVERALL MARKET",
+                      plotlyOutput("LoadvsSpeedPlotMkt", height = 350),width=12,status = "warning", solidHeader = TRUE,collapsible = TRUE)
+                ),
+                fluidRow(
+                  box(title = "KONE MARKET",
+                    plotlyOutput("LoadvsSpeedPlot", height = 350),width=12,status = "success", solidHeader = TRUE,collapsible = TRUE,collapsed = TRUE)
+                        ),
+                fluidRow(
+                  box(title = "COMPETITOR MARKET",
+                    plotlyOutput("LoadvsSpeedPlotLost", height = 350),width=12,status = "danger", solidHeader = TRUE,collapsible = TRUE,collapsed = TRUE)
+                )
         )
       )
       
