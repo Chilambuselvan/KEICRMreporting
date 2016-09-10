@@ -11,7 +11,11 @@ library(shiny)
 
 # Define server logic required to draw a histogram
 shinyServer(function(input, output) {
-   
+  reactdataContot=reactive({
+    subcon=OppClosed%>%
+      filter(Market.segment==input$MarSegChoose)%>%
+      summarise(cnt=n())
+  })
    reactdataCon=reactive({
      subcon=OppClosed%>%
        filter(Market.segment==input$MarSegChoose)
@@ -40,14 +44,30 @@ shinyServer(function(input, output) {
        group_by(`Floors/Travel/Rise`,Load,Speed,Region)%>%
        summarise(cnt=n())
    })
-   
    reactdataConSum = reactive({
      subcon1=OppClosed%>%
        filter(Market.segment==input$MarSegChoose)%>%
        group_by(Region)%>%
        summarise(cnt=sum(Won))
    })
+   reactdataCompet = reactive({
+     subcon1=OppClosed%>%
+       filter(Market.segment=="Medical")%>%
+       group_by(Winning.Competitor)%>%
+       summarise(cnt=n())%>%
+       arrange(desc(cnt))
+     
+   })
   ################################ DASHBOARD TAB ########################  
+   output$TotalOpp <- renderValueBox({
+     TotCounts=reactdataContot()
+     #   perct=subset(StageCounts,Stage=="Order Received (Won)")$n/nrow(reactdataCon())
+     valueBox(
+       paste0(TotCounts$cnt, " Nos "), "Total", icon = icon("list"),
+       color = "aqua"
+     )
+     
+   })
   output$ClosedSuccess <- renderValueBox({
     StageCounts=count(reactdataCon(),Stage)
     #   perct=subset(StageCounts,Stage=="Order Received (Won)")$n/nrow(reactdataCon())
@@ -65,12 +85,18 @@ shinyServer(function(input, output) {
       color = "aqua"
     )
   })
-   
    output$DashSuccessChart<-renderPlotly({
      plot_ly(data=reactdataConSum(),x = Region ,y = cnt,showlegend=FALSE,type="bar")%>%
      add_trace(x = Region, y=cnt,text=cnt,mode="text",textposition ="top middle",
                showlegend=FALSE,hoverinfo="none")%>%
       layout(xaxis=list(title = "Region"),yaxis=list(title = "Quantity"))%>%
+       layout(title="Opportunity Won Region Wise")
+   })
+   output$TopCompetitor<-renderPlotly({
+     plot_ly(data=reactdataConSum(),x = Region ,y = cnt,showlegend=FALSE,type="bar")%>%
+       add_trace(x = Region, y=cnt,text=cnt,mode="text",textposition ="top middle",
+                 showlegend=FALSE,hoverinfo="none")%>%
+       layout(xaxis=list(title = "Region"),yaxis=list(title = "Quantity"))%>%
        layout(title="Opportunity Won Region Wise")
    })
    ################################ Analysis I TAB ########################  

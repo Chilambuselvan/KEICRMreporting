@@ -62,21 +62,15 @@ shinyUI(
                   selectInput(inputId = "MarSegChoose","Market Segment",ClosedMarketSeg,multiple = FALSE),
                   # Dynamic valueBoxes
                  # valueBox(10 * 2, "New Orders", icon = icon("credit-card")),
-                  valueBoxOutput("ClosedSuccess"),
-                  
-                 valueBoxOutput("ClosedSuccessPer")
-                  
-                ),#fluidrow ends
+                 valueBoxOutput("TotalOpp"),
+                 valueBoxOutput("ClosedSuccess"),
+                  valueBoxOutput("ClosedSuccessPer")
+                 ),#fluidrow ends
                 fluidRow(
                   box(plotlyOutput("DashSuccessChart", height = 350),status = "success"),
-                  
-                  box(
-                    title = "Controls",
-                    sliderInput("slider", "Number of observations:", 1, 100, 50)
-                  )
+                  box(plotlyOutput("TopCompetitor", height = 350),status = "warning")
                 )#Fluid row ends
         ),
-        
         # Second tab content
         tabItem(tabName = "widgets",
                 fluidRow(
@@ -102,7 +96,4 @@ shinyUI(
       )
     )#dashboard Body Close
   )#dashboard page close
-  
- 
-  
 )
