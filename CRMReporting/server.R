@@ -72,6 +72,21 @@ shinyServer(function(input, output,session) {
        summarise(cnt=n())%>%
        arrange(desc(Region))
      })
+   summary(OppClosed$Opportunity.Name)
+   reactdataOppWon = reactive({
+     OppClosed%>%
+       filter(Winning.Competitor=="Kone")%>%
+       group_by(KONE.Opportunity.Number,Opportunity.Name,Winning.Competitor,Region,Opportunity.Quantity)%>%
+       summarise(SalesPrice=mean(Total.Price))
+      })
+   reactdataOppLost = reactive({
+     OppClosed%>%
+       filter(!is.na(`Winning.Competitor's.Bid`) & Winning.Competitor!="Kone")%>%
+       group_by(KONE.Opportunity.Number,Opportunity.Name,Winning.Competitor,Region,Opportunity.Quantity,
+                `Winning.Competitor's.Bid`,`Winning.Competitor's.Bid.Currency`)%>%
+      summarise(DiffPrice=mean(Amount-`Winning.Competitor's.Bid`)) %>%
+      arrange(desc(DiffPrice))
+   })
   ################################ DASHBOARD TAB ########################  
    output$TotalOpp <- renderValueBox({
      TotCounts=reactdataContot()
@@ -160,5 +175,19 @@ shinyServer(function(input, output,session) {
                     size= subconL_S$cnt
                     )
   
+   })
+   ################################ Opportunities Analysis ########################  
+   output$PriceMarginWon = renderDataTable({
+     Dt=reactdataOppWon()
+     columns=c("Region","Opportunity.Name","SalesPrice","Opportunity.Quantity")
+     datatable(Dt[,columns,drop=FALSE],filter="top")
+   })
+   output$PriceMarginLost = renderDataTable({
+     Dt=reactdataOppLost()
+     #Dt$`Winning.Competitor's.Bid` = paste(Dt$`Winning.Competitor's.Bid`, Dt$`Winning.Competitor's.Bid.Currency`, sep="")
+     columns=c("Region","Opportunity.Name","Opportunity.Quantity","Winning.Competitor's.Bid","DiffPrice")
+     datatable(Dt[,columns,drop=FALSE],filter="top",
+               colnames = c('Region', 'Opp.Name', 'Qty', 'Competitor price', 'Price Difference'))
+      
    })
 })

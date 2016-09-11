@@ -15,6 +15,7 @@ library(dplyr)
 library(plotly)
 library(RColorBrewer)
 library(threejs)
+library(DT)
 #options(java.parameters = "-Xmx1024m" )
 library(shiny)
 
@@ -27,6 +28,7 @@ if (FALSE){
   ClosedMarketSeg=unique(OppClosed$Market.segment)
   OppClosed$Won=ifelse(OppClosed$Stage=="Order Received (Won)",1,0)
   OppClosed$Lost=ifelse(OppClosed$Stage=="Order Received (Won)",0,1)
+  
   if (grepl("*T*",OppClosed$`Capacity/Inclination`,ignore.case = TRUE)==TRUE)
   {
     OppClosed$Load=as.numeric(sub("T", "e3", OppClosed$`Capacity/Inclination`, fixed = TRUE))
@@ -49,7 +51,8 @@ shinyUI(
       sidebarMenu(
         menuItem("Dashboard", tabName = "dashboard", icon = icon("dashboard")),
         menuItem("Market Analysis", tabName = "widgets", icon = icon("balance-scale")),
-        menuItem("Market Analysis 3D", tabName = "3Dview", icon = icon("bars"))
+        menuItem("Market Analysis 3D", tabName = "3Dview", icon = icon("bars")),
+        menuItem("Price Analysis", tabName = "OppAnalysis", icon = icon("inr"))
        # menuItem("Closed opportunities", tabName = "widgets2", icon = icon("th"))
       )
     ),
@@ -92,7 +95,23 @@ shinyUI(
                   box(title = "3D view MARKET",width=12,status = "info", solidHeader = TRUE,collapsible = TRUE,collapsed = FALSE,
                       scatterplotThreeOutput("LoadvsSpeedPlot3js"))
                 )
+        ),# Second tab content ends
+        # Third tab content
+        tabItem(tabName = "OppAnalysis",
+                fluidRow(
+                selectInput(inputId = "selectRow","Choose Column",colnames(OppClosed),multiple = TRUE)
+                ),
+                fluidRow(
+                  box(title = "Price Margin (LOST)",width=12,status = "warning", solidHeader = TRUE,collapsible = TRUE,collapsed = TRUE,
+                      dataTableOutput("PriceMarginLost"))
+                ),
+                fluidRow(
+                  box(title = "Price Margin (WON)",width=12,status = "success", solidHeader = TRUE,collapsible = TRUE,collapsed = TRUE,
+                      dataTableOutput("PriceMarginWon"))
+                )
         )# Second tab content ends
+        
+        
       )
     )#dashboard Body Close
   )#dashboard page close
