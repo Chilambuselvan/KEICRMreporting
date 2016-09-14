@@ -41,15 +41,24 @@ shinyServer(function(input, output,session) {
      subconL_S=OppClosed%>%
        filter(Market.segment==input$MarSegChoose)%>%
        group_by(Region,Load,Speed)%>%
-       summarise(cnt=sum(Won))%>%
+       summarise(cnt=sum(Won),percent=paste0(round(sum(Won)/n()*100,0)," %"))%>%
        arrange(desc(Region))
    })
    reactdataLoadvsSpeedLost=reactive({
      subconL_S=OppClosed%>%
        filter(Market.segment==input$MarSegChoose)%>%
        group_by(Region,Load,Speed)%>%
-       summarise(cnt=sum(Lost))%>%
+       summarise(cnt=sum(Lost),percent=paste0(round(sum(Lost)/n()*100,0)," %"))%>%
        arrange(desc(Region))
+     # 
+     # tesrt=OppClosed%>%
+     #   filter(Market.segment=="Medical")%>%
+     #   group_by(Region,Load,Speed)%>%
+     #   filter(Lost==1) %>%
+     #   summarise(cnt=sum(Lost))%>%
+     #   top_n(1,cnt) %>%
+     #   arrange(desc(Region))
+
    })
    reactdataQVT=reactive({
      subconL_S=OppClosed%>%
@@ -190,4 +199,33 @@ shinyServer(function(input, output,session) {
                colnames = c('Region', 'Opp.Name', 'Qty', 'Competitor price', 'Price Difference'))
       
    })
+   ################################ Data View ########################  
+   output$tabOverAllMarket = renderDataTable({
+     Dt=reactdataLoadvsSpeedMkt()
+     Dt=Dt %>%
+       arrange(desc(cnt))
+     #Dt$`Winning.Competitor's.Bid` = paste(Dt$`Winning.Competitor's.Bid`, Dt$`Winning.Competitor's.Bid.Currency`, sep="")
+     columns=c("Region","Load","Speed","cnt")
+     datatable(Dt[,columns,drop=FALSE],filter="bottom",class = 'cell-border stripe',rownames = FALSE,
+               colnames = c('REGION', 'LOAD', 'SPEED','Quantity/Count'))
+     })
+   output$tabKONEMarket = renderDataTable({
+     Dt=reactdataLoadvsSpeed()
+     Dt=Dt %>%
+       arrange(desc(cnt))
+     #Dt$`Winning.Competitor's.Bid` = paste(Dt$`Winning.Competitor's.Bid`, Dt$`Winning.Competitor's.Bid.Currency`, sep="")
+     columns=c("Region","Load","Speed","cnt","percent")
+     datatable(Dt[,columns,drop=FALSE],filter="bottom",class = 'cell-border stripe',rownames = FALSE,
+               colnames = c('REGION', 'LOAD', 'SPEED','Quantity/Count','Pecentage'))
+   })
+   output$tabCompMarket = renderDataTable({
+     Dt=reactdataLoadvsSpeedLost()
+     Dt=Dt %>%
+       arrange(desc(cnt))
+     #Dt$`Winning.Competitor's.Bid` = paste(Dt$`Winning.Competitor's.Bid`, Dt$`Winning.Competitor's.Bid.Currency`, sep="")
+     columns=c("Region","Load","Speed","cnt","percent")
+     datatable(Dt[,columns,drop=FALSE],filter="bottom",class = 'cell-border stripe',rownames = FALSE,
+               colnames = c('REGION', 'LOAD', 'SPEED','Quantity/Count','Pecentage'))
+   })
+   
 })

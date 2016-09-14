@@ -52,7 +52,8 @@ shinyUI(
         menuItem("Dashboard", tabName = "dashboard", icon = icon("dashboard")),
         menuItem("Market Analysis", tabName = "widgets", icon = icon("balance-scale")),
         menuItem("Market Analysis 3D", tabName = "3Dview", icon = icon("bars")),
-        menuItem("Price Analysis", tabName = "OppAnalysis", icon = icon("inr"))
+        menuItem("Price Analysis", tabName = "OppAnalysis", icon = icon("inr")),
+        menuItem("Data View", tabName = "DataView", icon = icon("th"))
        # menuItem("Closed opportunities", tabName = "widgets2", icon = icon("th"))
       )
     ),
@@ -89,14 +90,14 @@ shinyUI(
                     plotlyOutput("LoadvsSpeedPlotLost", height = 350),width=12,status = "danger", solidHeader = TRUE,collapsible = TRUE,collapsed = TRUE)
                 )
         ),# Second tab content ends
-        # Second tab content
+        # Third tab content
         tabItem(tabName = "3Dview",
               fluidRow(
                   box(title = "3D view MARKET",width=12,status = "info", solidHeader = TRUE,collapsible = TRUE,collapsed = FALSE,
                       scatterplotThreeOutput("LoadvsSpeedPlot3js"))
                 )
-        ),# Second tab content ends
-        # Third tab content
+        ),# Third tab content ends
+        # Fourth tab content
         tabItem(tabName = "OppAnalysis",
                 fluidRow(
                 selectInput(inputId = "selectRow","Choose Column",colnames(OppClosed),multiple = TRUE)
@@ -109,8 +110,22 @@ shinyUI(
                   box(title = "Price Margin (WON)",width=12,status = "success", solidHeader = TRUE,collapsible = TRUE,collapsed = TRUE,
                       dataTableOutput("PriceMarginWon"))
                 )
-        )# Second tab content ends
-        
+        ),# Fourth tab content ends
+        # Fifth tab content
+        tabItem(tabName = "DataView",
+                fluidRow(
+                  box(title = "Overall Market",width=12,status = "warning", solidHeader = TRUE,collapsible = TRUE,collapsed = TRUE,
+                      dataTableOutput("tabOverAllMarket"))
+                ),
+                fluidRow(
+                  box(title = "KONE Market",width=12,status = "success", solidHeader = TRUE,collapsible = TRUE,collapsed = TRUE,
+                      dataTableOutput("tabKONEMarket"))
+                ),
+                fluidRow(
+                  box(title = "COMPETITOR Market",width=12,status = "danger", solidHeader = TRUE,collapsible = TRUE,collapsed = TRUE,
+                      dataTableOutput("tabCompMarket"))
+                )
+        )# Fifth tab content ends
         
       )
     )#dashboard Body Close
