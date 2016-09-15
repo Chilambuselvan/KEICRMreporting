@@ -25,21 +25,27 @@ if (FALSE){
                          detectDates = TRUE,rowNames = FALSE)
   OppOpen = read.xlsx("open.xlsx",sheet = 1,startRow = 1, colNames = TRUE,
                         detectDates = TRUE,rowNames = FALSE)
+  ConsolidatedOpp = rbind(OppClosed,OppOpen)
   ClosedMarketSeg=unique(OppClosed$Market.segment)
   OppClosed$Won=ifelse(OppClosed$Stage=="Order Received (Won)",1,0)
   OppClosed$Lost=ifelse(OppClosed$Stage=="Order Received (Won)",0,1)
+  ConsolidatedOpp$Won=ifelse(ConsolidatedOpp$Stage=="Order Received (Won)",1,0)
+  ConsolidatedOpp$Lost=ifelse(ConsolidatedOpp$Stage=="Order Received (Won)",0,1)
   
   if (grepl("*T*",OppClosed$`Capacity/Inclination`,ignore.case = TRUE)==TRUE)
   {
     OppClosed$Load=as.numeric(sub("T", "e3", OppClosed$`Capacity/Inclination`, fixed = TRUE))
+    ConsolidatedOpp$Load=as.numeric(sub("T", "e3", ConsolidatedOpp$`Capacity/Inclination`, fixed = TRUE))
   }
   if (grepl("*K*",OppClosed$`Capacity/Inclination`,ignore.case = TRUE)==TRUE)
   {
     OppClosed$Load=as.numeric(sub("K", "e3", OppClosed$`Capacity/Inclination`, fixed = TRUE))
+    ConsolidatedOpp$Load=as.numeric(sub("K", "e3", ConsolidatedOpp$`Capacity/Inclination`, fixed = TRUE))
   }
   if (OppClosed$Load<1000)
   {
     OppClosed$Load=as.numeric(OppClosed$`Capacity/Inclination`,rm.na=TRUE)*100
+    ConsolidatedOpp$Load=as.numeric(ConsolidatedOpp$`Capacity/Inclination`,rm.na=TRUE)*100
   }
  Regionpal=c("azure4", "deepskyblue2", "darkolivegreen2", "darkorange1")
 }

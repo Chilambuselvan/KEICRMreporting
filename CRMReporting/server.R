@@ -11,20 +11,23 @@ library(shiny)
 
 # Define server logic required to draw a histogram
 shinyServer(function(input, output,session) {
-   reactdataContot=reactive({
-    subcon=OppClosed%>%
+  #Total Qty of Opportunities Open + Closed 
+  reactdataContot=reactive({ 
+    subcon=ConsolidatedOpp%>%
       filter(Market.segment==input$MarSegChoose)%>%
-      summarise(cnt=n())
+      summarise(cnt=sum(Quantity,na.rm = TRUE))
   })
+  #DataFrame for Closed Opp  & selected Market 
    reactdataCon=reactive({
      subcon=OppClosed%>%
        filter(Market.segment==input$MarSegChoose)
   })
+   #DataFrame for Closed + Open Opp  & selected Market
    reactdataLoadvsSpeedMkt=reactive({
-     subconL_S=OppClosed%>%
+     subconL_S=ConsolidatedOpp%>%
        filter(Market.segment==input$MarSegChoose)%>%
        group_by(Region,Load,Speed)%>%
-       summarise(cnt=n()) %>%
+       summarise(cnt=sum(as.numeric(Quantity),na.rm = TRUE)) %>%
       arrange(desc(Region))
      })
    reactdatamarker=reactive({
@@ -37,31 +40,24 @@ shinyServer(function(input, output,session) {
      #arrange(desc(Region))
        
    })
+   #DataFrame for Closed Opp = Won Qty & Percentage
    reactdataLoadvsSpeed=reactive({
      subconL_S=OppClosed%>%
-       filter(Market.segment==input$MarSegChoose)%>%
+       filter(Market.segment==input$MarSegChoose & Won ==1)%>%
        group_by(Region,Load,Speed)%>%
-       summarise(cnt=sum(Won),percent=paste0(round(sum(Won)/n()*100,0)," %"))%>%
+       summarise(cnt=sum(Quantity,na.rm = TRUE),percent=paste0(round(sum(Quantity,na.rm = TRUE)/sum(OppClosed$Quantity,na.rm = TRUE)*100,0)," %"))%>%
        arrange(desc(Region))
    })
+   #DataFrame for Closed Opp = Lost Qty & Percentage
    reactdataLoadvsSpeedLost=reactive({
      subconL_S=OppClosed%>%
-       filter(Market.segment==input$MarSegChoose)%>%
+       filter(Market.segment==input$MarSegChoose & Lost ==1)%>%
        group_by(Region,Load,Speed)%>%
-       summarise(cnt=sum(Lost),percent=paste0(round(sum(Lost)/n()*100,0)," %"))%>%
+       summarise(cnt=sum(Quantity,na.rm = TRUE),percent=paste0(round(sum(Quantity,na.rm = TRUE)/sum(OppClosed$Quantity,na.rm = TRUE)*100,0)," %"))%>%
        arrange(desc(Region))
-     # 
-     # tesrt=OppClosed%>%
-     #   filter(Market.segment=="Medical")%>%
-     #   group_by(Region,Load,Speed)%>%
-     #   filter(Lost==1) %>%
-     #   summarise(cnt=sum(Lost))%>%
-     #   top_n(1,cnt) %>%
-     #   arrange(desc(Region))
-
    })
    reactdataQVT=reactive({
-     subconL_S=OppClosed%>%
+     subconL_S=ConsolidatedOpp%>%
        filter(Market.segment==input$MarSegChoose)%>%
        group_by(`Floors/Travel/Rise`,Load,Speed,Region)%>%
        summarise(cnt=n())
@@ -81,7 +77,7 @@ shinyServer(function(input, output,session) {
        summarise(cnt=n())%>%
        arrange(desc(Region))
      })
-   summary(OppClosed$Opportunity.Name)
+   
    reactdataOppWon = reactive({
      OppClosed%>%
        filter(Winning.Competitor=="Kone")%>%
