@@ -12,6 +12,8 @@ library(shinydashboard)
 library(openxlsx)
 library(tidyr)
 library(dplyr)
+library(ggmap)
+library(data.table)
 library(plotly)
 library(RColorBrewer)
 library(threejs)
@@ -22,32 +24,57 @@ library(shiny)
 #setwd("F:/Official/KEICRMreporting/CRMReporting/Data")
 if (FALSE){
   OppClosed = read.xlsx("closed.xlsx",sheet = 1,startRow = 1, colNames = TRUE,
-                         detectDates = TRUE,rowNames = FALSE)
-  OppOpen = read.xlsx("open.xlsx",sheet = 1,startRow = 1, colNames = TRUE,
                         detectDates = TRUE,rowNames = FALSE)
-  ConsolidatedOpp = rbind(OppClosed,OppOpen)
+  OppOpen = read.xlsx("open.xlsx",sheet = 1,startRow = 1, colNames = TRUE,
+                      detectDates = TRUE,rowNames = FALSE)
   ClosedMarketSeg=unique(OppClosed$Market.segment)
   OppClosed$Won=ifelse(OppClosed$Stage=="Order Received (Won)",1,0)
   OppClosed$Lost=ifelse(OppClosed$Stage=="Order Received (Won)",0,1)
-  ConsolidatedOpp$Won=ifelse(ConsolidatedOpp$Stage=="Order Received (Won)",1,0)
-  ConsolidatedOpp$Lost=ifelse(ConsolidatedOpp$Stage=="Order Received (Won)",0,1)
+  OppOpen$Won=ifelse(OppOpen$Stage=="Order Received (Won)",1,0)
+  OppOpen$Lost=ifelse(OppOpen$Stage=="Order Received (Won)",0,1)
+  BranchMapping=fread("BranchGeoCode.csv",stringsAsFactors = FALSE, header=TRUE)
+  BranchMapping=data.frame(BranchMapping)
+  OppClosed=left_join(OppClosed,BranchMapping,by=c("Branch.Office"="Bcity...1."))
+  OppOpen=left_join(OppOpen,BranchMapping,by=c("Branch.Office"="Bcity...1."))
   
   if (grepl("*T*",OppClosed$`Capacity/Inclination`,ignore.case = TRUE)==TRUE)
   {
     OppClosed$Load=as.numeric(sub("T", "e3", OppClosed$`Capacity/Inclination`, fixed = TRUE))
-    ConsolidatedOpp$Load=as.numeric(sub("T", "e3", ConsolidatedOpp$`Capacity/Inclination`, fixed = TRUE))
   }
   if (grepl("*K*",OppClosed$`Capacity/Inclination`,ignore.case = TRUE)==TRUE)
   {
     OppClosed$Load=as.numeric(sub("K", "e3", OppClosed$`Capacity/Inclination`, fixed = TRUE))
-    ConsolidatedOpp$Load=as.numeric(sub("K", "e3", ConsolidatedOpp$`Capacity/Inclination`, fixed = TRUE))
   }
   if (OppClosed$Load<1000)
   {
     OppClosed$Load=as.numeric(OppClosed$`Capacity/Inclination`,rm.na=TRUE)*100
-    ConsolidatedOpp$Load=as.numeric(ConsolidatedOpp$`Capacity/Inclination`,rm.na=TRUE)*100
   }
- Regionpal=c("azure4", "deepskyblue2", "darkolivegreen2", "darkorange1")
+  
+  if (grepl("*T*",OppOpen$`Capacity/Inclination`,ignore.case = TRUE)==TRUE)
+  {
+    OppOpen$Load=as.numeric(sub("T", "e3", OppOpen$`Capacity/Inclination`, fixed = TRUE))
+  }
+  if (grepl("*K*",OppOpen$`Capacity/Inclination`,ignore.case = TRUE)==TRUE)
+  {
+    OppOpen$Load=as.numeric(sub("K", "e3", OppOpen$`Capacity/Inclination`, fixed = TRUE))
+  }
+  if (OppOpen$Load<1000)
+  {
+    OppOpen$Load=as.numeric(OppOpen$`Capacity/Inclination`,rm.na=TRUE)*100
+  }
+  ConsolidatedOpp = rbind(OppClosed,OppOpen)
+  Regionpal=c("azure4", "deepskyblue2", "darkolivegreen2", "darkorange1")
+  
+  ################################################# Preparing Geo Code fetching####################################
+  
+  ###### Binding Branch & disctrict based on Branchcode OrigOffice
+  # BranchCity=unique(ConsolidatedOpp$Branch.Office)
+  # BranchCity=BranchCity[!is.na(BranchCity)]
+  # Bcity=data.frame(BranchCity,stringsAsFactors = FALSE)
+  # geocodes <- geocode(as.character(Bcity$BranchCity))
+  # Bcity <- data.frame(Bcity[,1],geocodes,stringsAsFactors = FALSE)
+  # write.csv(Bcity,file="BranchGeoCode.csv")
+  
 }
 # Define UI for application that draws a histogram
 shinyUI(
