@@ -52,7 +52,7 @@ shinyServer(function(input, output,session) {
    reactdataLoadvsSpeedLost=reactive({
      subconL_S=OppClosed%>%
        filter(Market.segment==input$MarSegChoose & Lost ==1)%>%
-       group_by(Region,Load,Speed)%>%
+       group_by(Region,Load,Speed,`Winning.Competitor's.Bid`)%>%
        summarise(cnt=sum(Quantity,na.rm = TRUE),percent=paste0(round(sum(Quantity,na.rm = TRUE)/sum(OppClosed$Quantity,na.rm = TRUE)*100,0)," %"))%>%
        arrange(desc(Region))
    })
@@ -217,11 +217,13 @@ shinyServer(function(input, output,session) {
    output$tabCompMarket = renderDataTable({
      Dt=reactdataLoadvsSpeedLost()
      Dt=Dt %>%
-       arrange(desc(cnt))
+       group_by(Region,Load,Speed)%>%
+       arrange(desc(cnt))%>%
+     summarise(Topcomp = paste(`Winning.Competitor's.Bid`[min(cnt) == cnt], collapse = ","))
      #Dt$`Winning.Competitor's.Bid` = paste(Dt$`Winning.Competitor's.Bid`, Dt$`Winning.Competitor's.Bid.Currency`, sep="")
-     columns=c("Region","Load","Speed","cnt","percent")
+     columns=c("Region","Load","Speed","cnt","percent","Topcomp")
      datatable(Dt[,columns,drop=FALSE],filter="bottom",class = 'cell-border stripe',rownames = FALSE,
-               colnames = c('REGION', 'LOAD', 'SPEED','Quantity/Count','Pecentage'))
+               colnames = c('REGION', 'LOAD', 'SPEED','Quantity/Count','Pecentage','Competitor'))
    })
    
 })
