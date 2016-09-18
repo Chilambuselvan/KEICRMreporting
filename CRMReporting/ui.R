@@ -188,7 +188,6 @@ shinyUI(
                                     ),
                                     checkboxInput("legend", "Show legend", TRUE)
                                   )
-                      
                       )
                 )
                 # ,
