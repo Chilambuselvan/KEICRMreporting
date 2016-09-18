@@ -15,6 +15,8 @@ library(dplyr)
 library(ggmap)
 library(data.table)
 library(plotly)
+library(leaflet)
+library(htmltools)
 library(RColorBrewer)
 library(threejs)
 library(DT)
@@ -27,6 +29,8 @@ if (FALSE){
                         detectDates = TRUE,rowNames = FALSE)
   OppOpen = read.xlsx("open.xlsx",sheet = 1,startRow = 1, colNames = TRUE,
                       detectDates = TRUE,rowNames = FALSE)
+  OppClosed$Branch.Office=sub(" MP", "", OppClosed$Branch.Office, fixed = TRUE)
+  OppOpen$Branch.Office=sub(" MP", "", OppOpen$Branch.Office, fixed = TRUE)
   ClosedMarketSeg=unique(OppClosed$Market.segment)
   OppClosed$Won=ifelse(OppClosed$Stage=="Order Received (Won)",1,0)
   OppClosed$Lost=ifelse(OppClosed$Stage=="Order Received (Won)",0,1)
@@ -63,18 +67,23 @@ if (FALSE){
     OppOpen$Load=as.numeric(OppOpen$`Capacity/Inclination`,rm.na=TRUE)*100
   }
   ConsolidatedOpp = rbind(OppClosed,OppOpen)
-  Regionpal=c("azure4", "deepskyblue2", "darkolivegreen2", "darkorange1")
-  
+  Regionpal=c("forestgreen", "darkorange", "deepskyblue", "dimgray")
   ################################################# Preparing Geo Code fetching####################################
   
   ###### Binding Branch & disctrict based on Branchcode OrigOffice
   # BranchCity=unique(ConsolidatedOpp$Branch.Office)
   # BranchCity=BranchCity[!is.na(BranchCity)]
   # Bcity=data.frame(BranchCity,stringsAsFactors = FALSE)
-  # geocodes <- geocode(as.character(Bcity$BranchCity))
+  # Bcity=sub(" MP", "", Bcity$BranchCity, fixed = TRUE)
+  # Bcity=unique(Bcity)
+  # Bcity=data.frame(Bcity)
+  # 
+  # geocodes <- geocode(as.character(Bcity$Bcity),output = "more")
+  # geocodes = geocodes %>%
+  #   select(lat,lon,administrative_area_level_1)
   # Bcity <- data.frame(Bcity[,1],geocodes,stringsAsFactors = FALSE)
-  # write.csv(Bcity,file="BranchGeoCode.csv")
-  
+  # write.csv(Bcity,file="BranchGeoCode.csv",row.names = FALSE)
+  # 
 }
 # Define UI for application that draws a histogram
 shinyUI(
@@ -86,22 +95,28 @@ shinyUI(
         menuItem("Market Analysis", tabName = "widgets", icon = icon("balance-scale")),
         menuItem("Market Analysis 3D", tabName = "3Dview", icon = icon("bars")),
         menuItem("Price Analysis", tabName = "OppAnalysis", icon = icon("inr")),
-        menuItem("Data View", tabName = "DataView", icon = icon("th"))
+        menuItem("Data View", tabName = "DataView", icon = icon("th")),
+        menuItem("Elevator Volumes", tabName = "ElevVolumes", icon = icon("map-marker")),
+        menuItem("Missing Data", tabName = "missingSummary", icon = icon("warning"))
        # menuItem("Closed opportunities", tabName = "widgets2", icon = icon("th"))
       )
     ),
     dashboardBody(
       tabItems(
+        #### DF summary ########
+        tabItem(tabName = "missingSummary",
+                fluidRow(
+                  box(title = "Missing Data Summary (Closed opportunities)",width=12,status = "warning", solidHeader = TRUE,collapsible = FALSE,collapsed = FALSE,
+                      dataTableOutput("tabmissingSummary"))
+                )
+              ),
         # First tab content
         tabItem(tabName = "dashboard",
                 fluidRow(
-                  #valueBoxOutput("ThisMonth"),
-                  selectInput(inputId = "MarSegChoose","Market Segment",ClosedMarketSeg,multiple = FALSE),
-                  # Dynamic valueBoxes
-                 # valueBox(10 * 2, "New Orders", icon = icon("credit-card")),
+                 selectInput(inputId = "MarSegChoose","Market Segment",ClosedMarketSeg,multiple = FALSE),
                  valueBoxOutput("TotalOpp"),
                  valueBoxOutput("ClosedSuccess"),
-                  valueBoxOutput("ClosedSuccessPer")
+                 valueBoxOutput("ClosedSuccessPer")
                  ),#fluidrow ends
                 fluidRow(
                   box(plotlyOutput("DashSuccessChart", height = 350),status = "success"),
@@ -158,8 +173,30 @@ shinyUI(
                   box(title = "COMPETITOR Market",width=12,status = "danger", solidHeader = TRUE,collapsible = TRUE,collapsed = TRUE,
                       dataTableOutput("tabCompMarket"))
                 )
-        )# Fifth tab content ends
-        
+        ),# Sixth tab content ends
+        tabItem(tabName = "ElevVolumes",
+                fluidRow(
+                  box(title = "Overall Market",width=12,status = "warning", solidHeader = TRUE,collapsible = TRUE,collapsed = TRUE,
+                      leafletOutput("mapOverAllMarket"))
+                ),
+                fluidRow(
+                  box(title = "Market Analysis",width=12,status = "success", solidHeader = TRUE,collapsible = TRUE,collapsed = FALSE,
+                      leafletOutput("mapKONEMarket"),
+                      absolutePanel(top = 10, right = 10,
+                                    sliderInput("range", "Magnitudes", min(1), max(100),
+                                                value = 1, step = 10
+                                    ),
+                                    checkboxInput("legend", "Show legend", TRUE)
+                                  )
+                      
+                      )
+                )
+                # ,
+                # fluidRow(
+                #   box(title = "COMPETITOR Market",width=12,status = "danger", solidHeader = TRUE,collapsible = TRUE,collapsed = TRUE,
+                #       leafletOutput("mapCompMarket"))
+                # )
+        )# Sixth tab content ends
       )
     )#dashboard Body Close
   )#dashboard page close

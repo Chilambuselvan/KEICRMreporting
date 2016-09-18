@@ -92,6 +92,28 @@ shinyServer(function(input, output,session) {
       summarise(DiffPrice=mean(Amount-`Winning.Competitor's.Bid`)) %>%
       arrange(desc(DiffPrice))
    })
+
+   
+   #######################DataFrame_Summary################ tabmissingSummary
+   
+   output$tabmissingSummary = renderDataTable({
+  
+     missing.summary <- sapply(OppClosed, function(x) sum(is.na(x))) 
+     indexs.missing <- sapply(OppClosed, function(x) sum(is.na(x))) > 0 
+     num.variable.missing <- length(missing.summary[indexs.missing])
+     
+     freq.table.miss <- data.frame( Variable = names(missing.summary[indexs.missing]), Number.of.Missing = as.integer(missing.summary[indexs.missing]), 
+                                    Percentage.of.Missing = paste0(round(as.numeric(prop.table(missing.summary[indexs.missing]))*100,2)," %") )
+     
+     freq.table.miss <- freq.table.miss %>% 
+       select(Variable:Percentage.of.Missing) %>%
+       arrange(desc(Number.of.Missing))
+     
+     datatable(freq.table.miss)
+   
+   })
+   ########################DataFrame_SummaryEnds###############
+   
   ################################ DASHBOARD TAB ########################  
    output$TotalOpp <- renderValueBox({
      TotCounts=reactdataContot()
@@ -162,8 +184,7 @@ shinyServer(function(input, output,session) {
            marker=list(size=cnt),color = Region,colors = Regionpal) 
      })
    output$LoadvsSpeedPlotLost<- renderPlotly({
-    
-     plot_ly(data = reactdataLoadvsSpeedLost(), x = Load, y = Speed,mode = "markers",
+      plot_ly(data = reactdataLoadvsSpeedLost(), x = Load, y = Speed,mode = "markers",
              marker=list(size=cnt),color = Region,colors = Regionpal) 
      
    })
@@ -224,6 +245,41 @@ shinyServer(function(input, output,session) {
      columns=c("Region","Load","Speed","cnt","percent","Topcomp")
      datatable(Dt[,columns,drop=FALSE],filter="bottom",class = 'cell-border stripe',rownames = FALSE,
                colnames = c('REGION', 'LOAD', 'SPEED','Quantity/Count','Pecentage','Competitor'))
+   })
+   ################################ Elev Volumes View ########################  
+   reactmapOverall = reactive({
+     Dt1=ConsolidatedOpp %>%
+       filter(Market.segment==input$MarSegChoose) %>%
+       group_by(administrative_area_level_1) %>%
+       summarise(cnt=sum(Quantity,na.rm=TRUE),
+                 lat=mean(lat,na.rm=TRUE),lon=mean(lon,na.rm=TRUE))
+     
+   })
+   output$mapOverAllMarket = renderLeaflet({
+     pal <- colorFactor(Regionpal, domain = c("West","South","North","East"))
+      Dt=ConsolidatedOpp %>%
+      filter(Market.segment==input$MarSegChoose) %>%
+        group_by(Region,Branch.Office,lat,lon) %>%
+          summarise(cnt=sum(Quantity,na.rm=TRUE))
+      content <- paste0(Dt$Branch.Office," Nos: ",Dt$cnt)
+      m=leaflet(na.omit(Dt)) %>% addTiles() %>%
+      addCircleMarkers(data = Dt, lng = ~ lon, lat = ~ lat,
+                        color= ~pal(Region), radius = ~cnt/10,
+                        stroke = FALSE, fillOpacity = 0.5,
+                        popup = ~htmlEscape(content))  %>%
+          addLegend(position="bottomright",labels=unique(Dt$Region),colors=Regionpal)
+      print(m)
+   })
+  
+   output$mapKONEMarket = renderLeaflet({
+     Dt1=reactmapOverall()
+     content <- paste0(Dt1$administrative_area_level_1," Nos: ",Dt1$cnt)
+     m=leaflet(na.omit(Dt1)) %>% addTiles() %>%
+       addCircleMarkers(data = Dt1, lng = ~ lon, lat = ~ lat
+                        ,color= brewer.pal(30,"Set3"), radius = ~cnt/10,
+                        stroke = FALSE, fillOpacity = 0.5,
+        popup = ~htmlEscape(content)) 
+     print(m)
    })
    
 })
