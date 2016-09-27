@@ -307,5 +307,63 @@ shinyServer(function(input, output,session) {
         popup = ~htmlEscape(content)) 
      print(m)
    })
+   ################################ Elev Analysis View ########################  
+   
+   output$mapKONEOppClosed = renderLeaflet({
+     pal <- colorFactor(Regionpal, domain = c("West","South","North","East"))
+     Filter_ClosedOpp=OppClosed
+     if(!is.null(input$SelLoad_An)){
+       Filter_ClosedOpp = subset(OppClosed,OppClosed$Load %in% input$SelLoad_An)
+     }
+     if(!is.null(input$SelSpeed_An)){
+       Filter_ClosedOpp = subset(OppClosed,OppClosed$Speed %in% input$SelSpeed_An)
+     }
+     if(!is.null(input$SelSpeed_An) && !is.null(input$SelLoad_An)){
+       Filter_ClosedOpp = subset(OppClosed,OppClosed$Speed %in% input$SelSpeed_An)
+       Filter_ClosedOpp = subset(Filter_ClosedOpp,Filter_ClosedOpp$Load %in% input$SelLoad_An)
+     }
+     Filter_ClosedOpp$Market.segment
+     Dt=Filter_ClosedOpp %>%
+       filter(Winning.Competitor=="Kone") %>%
+       filter(Market.segment=="Medical") %>%
+         group_by(Region,Branch.Office,lat,lon) %>%
+       summarise(cnt=sum(Quantity,na.rm=TRUE))
+     content <- paste0(Dt$Branch.Office," Nos: ",Dt$cnt)
+     m=leaflet(na.omit(Dt)) %>% addTiles() %>%
+       addCircleMarkers(data = Dt, lng = ~ lon, lat = ~ lat,
+                        color= ~pal(Region), radius = ~cnt/5,
+                        stroke = FALSE, fillOpacity = 0.5,
+                        popup = ~htmlEscape(content))  %>%
+       addLegend(position="bottomright",labels=unique(Dt$Region),colors=Regionpal)
+     print(m)
+   })
+   
+   
+   output$mapCompOppClosed = renderLeaflet({
+     pal <- colorFactor(Regionpal, domain = c("West","South","North","East"))
+     Filter_ClosedOpp=OppClosed
+     if(!is.null(input$SelLoad_An)){
+       Filter_ClosedOpp = subset(OppClosed,OppClosed$Load %in% input$SelLoad_An)
+     }
+     if(!is.null(input$SelSpeed_An)){
+       Filter_ClosedOpp = subset(OppClosed,OppClosed$Speed %in% input$SelSpeed_An)
+     }
+     if(!is.null(input$SelSpeed_An) && !is.null(input$SelLoad_An)){
+       Filter_ClosedOpp = subset(OppClosed,OppClosed$Speed %in% input$SelSpeed_An)
+       Filter_ClosedOpp = subset(Filter_ClosedOpp,Filter_ClosedOpp$Load %in% input$SelLoad_An)
+     }
+     Dt=Filter_ClosedOpp %>%
+       filter(Market.segment=="Medical" && Winning.Competitor!="Kone") %>%
+       group_by(Region,Branch.Office,lat,lon) %>%
+       summarise(cnt=sum(Quantity,na.rm=TRUE))
+     content <- paste0(Dt$Branch.Office," Nos: ",Dt$cnt)
+     m=leaflet(na.omit(Dt)) %>% addTiles() %>%
+       addCircleMarkers(data = Dt, lng = ~ lon, lat = ~ lat,
+                        color= ~pal(Region), radius = ~cnt/5,
+                        stroke = FALSE, fillOpacity = 0.5,
+                        popup = ~htmlEscape(content))  %>%
+       addLegend(position="bottomright",labels=unique(Dt$Region),colors=Regionpal)
+     print(m)
+   })
    
 })

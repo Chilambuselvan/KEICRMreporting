@@ -214,13 +214,12 @@ shinyUI(
                   )
                 ),
                 fluidRow(
-                  box(title = "KONE Market",width=12,status = "success", solidHeader = TRUE,collapsible = TRUE,collapsed = TRUE,
-                      leafletOutput("mapKONEOppClosed"))
-                ),
-                fluidRow(
-                  box(title = "Competitor Market",width=12,status = "danger", solidHeader = TRUE,collapsible = TRUE,collapsed = FALSE,
-                      leafletOutput("mapCompOppClosed")
-                  )
+                  
+                  box(title = "KONE Market",width=6,status = "success", solidHeader = TRUE,collapsible = TRUE,collapsed = TRUE,
+                      leafletOutput("mapKONEOppClosed")),
+               
+                  box(title = "Competitor Market",width=6,status = "danger", solidHeader = TRUE,collapsible = TRUE,collapsed = FALSE,
+                      leafletOutput("mapCompOppClosed"))
                 )
                 # ,
                 # fluidRow(
