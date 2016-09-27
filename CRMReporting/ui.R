@@ -96,7 +96,8 @@ shinyUI(
         menuItem("Market Analysis 3D", tabName = "3Dview", icon = icon("bars")),
         menuItem("Price Analysis", tabName = "OppAnalysis", icon = icon("inr")),
         menuItem("Data View", tabName = "DataView", icon = icon("th")),
-        menuItem("Elevator Volumes", tabName = "ElevVolumes", icon = icon("map-marker")),
+        menuItem("Elevator Volumes (ALL)", tabName = "ElevVolumes", icon = icon("map-marker")),
+        menuItem("Elevator Analysis", tabName = "ElevAnalysis", icon = icon("map-marker")),
         menuItem("Missing Data", tabName = "missingSummary", icon = icon("warning"))
        # menuItem("Closed opportunities", tabName = "widgets2", icon = icon("th"))
       )
@@ -176,18 +177,24 @@ shinyUI(
         ),# Sixth tab content ends
         tabItem(tabName = "ElevVolumes",
                 fluidRow(
-                  box(title = "Overall Market",width=12,status = "warning", solidHeader = TRUE,collapsible = TRUE,collapsed = TRUE,
+                  column(6,
+                  selectInput(inputId = "SelLoad","Choose Load",ConsolidatedOpp$Load,multiple = TRUE)
+                  ),
+                  column(6,
+                  selectInput(inputId = "SelSpeed","Choose Speed",ConsolidatedOpp$Speed,multiple = TRUE)
+                  )
+                ),
+                fluidRow(
+                  box(title = "Overall Market (Region Wise)",width=12,status = "warning", solidHeader = TRUE,collapsible = TRUE,collapsed = TRUE,
                       leafletOutput("mapOverAllMarket"))
                 ),
                 fluidRow(
-                  box(title = "Market Analysis",width=12,status = "success", solidHeader = TRUE,collapsible = TRUE,collapsed = FALSE,
-                      leafletOutput("mapKONEMarket"),
-                      absolutePanel(top = 10, right = 10,
-                                    sliderInput("range", "Magnitudes", min(1), max(100),
-                                                value = 1, step = 10
-                                    ),
-                                    checkboxInput("legend", "Show legend", TRUE)
-                                  )
+                  box(title = "Market Analysis (State Wise)",width=12,status = "success", solidHeader = TRUE,collapsible = TRUE,collapsed = FALSE,
+                      leafletOutput("mapKONEMarket")
+                      # ,
+                      # absolutePanel(top = 20, right = 20,
+                      #                checkboxInput("legend", "Show legend", TRUE)
+                      #             )
                       )
                 )
                 # ,
@@ -195,8 +202,33 @@ shinyUI(
                 #   box(title = "COMPETITOR Market",width=12,status = "danger", solidHeader = TRUE,collapsible = TRUE,collapsed = TRUE,
                 #       leafletOutput("mapCompMarket"))
                 # )
-        )# Sixth tab content ends
+        ),# Sixth tab content ends
+        # Seventh tab content Starts
+        tabItem(tabName = "ElevAnalysis",
+                fluidRow(
+                  column(6,
+                         selectInput(inputId = "SelLoad_An","Choose Load",OppClosed$Load,multiple = TRUE)
+                  ),
+                  column(6,
+                         selectInput(inputId = "SelSpeed_An","Choose Speed",OppClosed$Speed,multiple = TRUE)
+                  )
+                ),
+                fluidRow(
+                  box(title = "KONE Market",width=12,status = "success", solidHeader = TRUE,collapsible = TRUE,collapsed = TRUE,
+                      leafletOutput("mapKONEOppClosed"))
+                ),
+                fluidRow(
+                  box(title = "Competitor Market",width=12,status = "danger", solidHeader = TRUE,collapsible = TRUE,collapsed = FALSE,
+                      leafletOutput("mapCompOppClosed")
+                  )
+                )
+                # ,
+                # fluidRow(
+                #   box(title = "COMPETITOR Market",width=12,status = "danger", solidHeader = TRUE,collapsible = TRUE,collapsed = TRUE,
+                #       leafletOutput("mapCompMarket"))
+                # )
+        )# Seventh tab content ends
       )
-    )#dashboard Body Close
+      )#dashboard Body Close
   )#dashboard page close
 )

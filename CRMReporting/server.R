@@ -20,7 +20,9 @@ shinyServer(function(input, output,session) {
   #DataFrame for Closed Opp  & selected Market 
    reactdataCon=reactive({
      subcon=OppClosed%>%
-       filter(Market.segment==input$MarSegChoose)
+       filter(Market.segment==input$MarSegChoose) %>%
+       group_by(Stage) %>%
+       summarise(n=sum(Quantity,na.rm = TRUE))
   })
    #DataFrame for Closed + Open Opp  & selected Market
    reactdataLoadvsSpeedMkt=reactive({
@@ -64,9 +66,10 @@ shinyServer(function(input, output,session) {
    })
    reactdataConSum = reactive({
      subcon1=OppClosed%>%
+       filter(Won==1)%>%
        filter(Market.segment==input$MarSegChoose)%>%
        group_by(Region)%>%
-       summarise(cnt=sum(Won)) %>%
+       summarise(cnt=sum(Quantity,na.rm=TRUE)) %>%
          arrange(desc(Region))
    })
    reactdataCompet = reactive({
@@ -74,7 +77,7 @@ shinyServer(function(input, output,session) {
        filter(Winning.Competitor!="Kone")%>%
        filter(Market.segment==input$MarSegChoose)%>%
        group_by(Region)%>%
-       summarise(cnt=n())%>%
+       summarise(cnt=sum(Quantity,na.rm=TRUE))%>%
        arrange(desc(Region))
      })
    
@@ -124,16 +127,15 @@ shinyServer(function(input, output,session) {
      
    })
    output$ClosedSuccess <- renderValueBox({
-    StageCounts=count(reactdataCon(),Stage)
-       valueBox(
+     StageCounts=reactdataCon()
+      valueBox(
          paste0(subset(StageCounts,Stage=="Order Received (Won)")$n, " Nos "), "WON", icon = icon("list"),
          color = "purple"
        )
-    
     })
    output$ClosedSuccessPer <- renderValueBox({
-    StageCounts=count(reactdataCon(),Stage)
-    perct=subset(StageCounts,Stage=="Order Received (Won)")$n/nrow(reactdataCon())
+     StageCounts=reactdataCon()
+    perct=subset(StageCounts,Stage=="Order Received (Won)")$n/colSums(StageCounts[,2])
     valueBox(
       paste0(round(perct*100,0), " %"), "WON", icon = icon("thumbs-up", lib = "glyphicon"),
       color = "aqua"
@@ -248,7 +250,18 @@ shinyServer(function(input, output,session) {
    })
    ################################ Elev Volumes View ########################  
    reactmapOverall = reactive({
-     Dt1=ConsolidatedOpp %>%
+     Filter_ConOpp=ConsolidatedOpp
+     if(!is.null(input$SelLoad)){
+       Filter_ConOpp = subset(ConsolidatedOpp,ConsolidatedOpp$Load %in% input$SelLoad)
+     }
+     if(!is.null(input$SelSpeed)){
+       Filter_ConOpp = subset(ConsolidatedOpp,ConsolidatedOpp$Speed %in% input$SelSpeed)
+     }
+     if(!is.null(input$SelSpeed) && !is.null(input$SelLoad) ){
+       Filter_ConOpp = subset(ConsolidatedOpp,ConsolidatedOpp$Speed %in% input$SelSpeed)
+       Filter_ConOpp = subset(Filter_ConOpp,Filter_ConOpp$Load %in% input$SelLoad)
+     }
+     Dt1=Filter_ConOpp %>%
        filter(Market.segment==input$MarSegChoose) %>%
        group_by(administrative_area_level_1) %>%
        summarise(cnt=sum(Quantity,na.rm=TRUE),
@@ -257,8 +270,20 @@ shinyServer(function(input, output,session) {
    })
    output$mapOverAllMarket = renderLeaflet({
      pal <- colorFactor(Regionpal, domain = c("West","South","North","East"))
-      Dt=ConsolidatedOpp %>%
+     Filter_ConOpp=ConsolidatedOpp
+     if(!is.null(input$SelLoad)){
+       Filter_ConOpp = subset(ConsolidatedOpp,ConsolidatedOpp$Load %in% input$SelLoad)
+     }
+     if(!is.null(input$SelSpeed)){
+       Filter_ConOpp = subset(ConsolidatedOpp,ConsolidatedOpp$Speed %in% input$SelSpeed)
+     }
+     if(!is.null(input$SelSpeed) && !is.null(input$SelLoad) ){
+       Filter_ConOpp = subset(ConsolidatedOpp,ConsolidatedOpp$Speed %in% input$SelSpeed)
+       Filter_ConOpp = subset(Filter_ConOpp,Filter_ConOpp$Load %in% input$SelLoad)
+     }
+      Dt=Filter_ConOpp %>%
       filter(Market.segment==input$MarSegChoose) %>%
+        
         group_by(Region,Branch.Office,lat,lon) %>%
           summarise(cnt=sum(Quantity,na.rm=TRUE))
       content <- paste0(Dt$Branch.Office," Nos: ",Dt$cnt)
@@ -275,8 +300,9 @@ shinyServer(function(input, output,session) {
      Dt1=reactmapOverall()
      content <- paste0(Dt1$administrative_area_level_1," Nos: ",Dt1$cnt)
      m=leaflet(na.omit(Dt1)) %>% addTiles() %>%
-       addCircleMarkers(data = Dt1, lng = ~ lon, lat = ~ lat
-                        ,color= brewer.pal(30,"Set3"), radius = ~cnt/10,
+       #addProviderTiles("Stamen.TonerHybrid") %>%
+         addCircleMarkers(data = Dt1, lng = ~ lon, lat = ~ lat
+                        ,color= brewer.pal(30,"Dark2"), radius = ~cnt/10,
                         stroke = FALSE, fillOpacity = 0.5,
         popup = ~htmlEscape(content)) 
      print(m)
