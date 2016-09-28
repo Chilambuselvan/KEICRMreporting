@@ -51,7 +51,7 @@ if (FALSE){
   }
   if (OppClosed$Load<1000)
   {
-    OppClosed$Load=as.numeric(OppClosed$`Capacity/Inclination`,rm.na=TRUE)*100
+    OppClosed$Load=as.numeric(OppClosed$`Capacity/Inclination`,rm.na=TRUE)*68
   }
   
   if (grepl("*T*",OppOpen$`Capacity/Inclination`,ignore.case = TRUE)==TRUE)
@@ -64,7 +64,7 @@ if (FALSE){
   }
   if (OppOpen$Load<1000)
   {
-    OppOpen$Load=as.numeric(OppOpen$`Capacity/Inclination`,rm.na=TRUE)*100
+    OppOpen$Load=as.numeric(OppOpen$`Capacity/Inclination`,rm.na=TRUE)*68
   }
   ConsolidatedOpp = rbind(OppClosed,OppOpen)
   Regionpal=c("forestgreen", "darkorange", "deepskyblue", "dimgray")
@@ -215,7 +215,7 @@ shinyUI(
                 ),
                 fluidRow(
                   
-                  box(title = "KONE Market",width=6,status = "success", solidHeader = TRUE,collapsible = TRUE,collapsed = TRUE,
+                  box(title = "KONE Market",width=6,status = "success", solidHeader = TRUE,collapsible = TRUE,collapsed = FALSE,
                       leafletOutput("mapKONEOppClosed")),
                
                   box(title = "Competitor Market",width=6,status = "danger", solidHeader = TRUE,collapsible = TRUE,collapsed = FALSE,
