@@ -26,14 +26,14 @@ shinyServer(function(input, output,session) {
   })
    #DataFrame for Closed + Open Opp  & selected Market
    reactdataLoadvsSpeedMkt=reactive({
-     subconL_S=ConsolidatedOpp%>%
+     ConsolidatedOpp%>%
        filter(Market.segment==input$MarSegChoose)%>%
        group_by(Region,Load,Speed)%>%
        summarise(cnt=sum(as.numeric(Quantity),na.rm = TRUE)) %>%
       arrange(desc(Region))
      })
    reactdatamarker=reactive({
-     subconL_S=OppClosed%>%
+     OppClosed%>%
        filter(Market.segment==input$MarSegChoose)%>%
        group_by(Load,Speed)%>%
        summarise(cnt=n())%>%
@@ -44,7 +44,7 @@ shinyServer(function(input, output,session) {
    })
    #DataFrame for Closed Opp = Won Qty & Percentage
    reactdataLoadvsSpeed=reactive({
-     subconL_S=OppClosed%>%
+     OppClosed%>%
        filter(Market.segment==input$MarSegChoose & Won ==1)%>%
        group_by(Region,Load,Speed)%>%
        summarise(cnt=sum(Quantity,na.rm = TRUE),percent=paste0(round(sum(Quantity,na.rm = TRUE)/sum(OppClosed$Quantity,na.rm = TRUE)*100,0)," %"))%>%
@@ -52,8 +52,9 @@ shinyServer(function(input, output,session) {
    })
    #DataFrame for Closed Opp = Lost Qty & Percentage
    reactdataLoadvsSpeedLost=reactive({
-     subconL_S=OppClosed%>%
-       filter(Market.segment==input$MarSegChoose & Lost ==1)%>%
+     OppClosed%>%
+       filter(Lost ==1)%>%
+       filter(Market.segment==input$MarSegChoose)%>%
        group_by(Region,Load,Speed,`Winning.Competitor's.Bid`,Winning.Competitor)%>%
        summarise(cnt=sum(Quantity,na.rm = TRUE),percent=paste0(round(sum(Quantity,na.rm = TRUE)/sum(OppClosed$Quantity,na.rm = TRUE)*100,0)," %"))%>%
        arrange(desc(Region))
@@ -95,15 +96,11 @@ shinyServer(function(input, output,session) {
       summarise(DiffPrice=mean(Amount-`Winning.Competitor's.Bid`)) %>%
       arrange(desc(DiffPrice))
    })
-
-   
    #######################DataFrame_Summary################ tabmissingSummary
-   
    output$tabmissingSummary = renderDataTable({
-  
-     missing.summary <- sapply(OppClosed, function(x) sum(is.na(x))) 
-     indexs.missing <- sapply(OppClosed, function(x) sum(is.na(x))) > 0 
-     num.variable.missing <- length(missing.summary[indexs.missing])
+      missing.summary <- sapply(OppClosed, function(x) sum(is.na(x))) 
+      indexs.missing <- sapply(OppClosed, function(x) sum(is.na(x))) > 0 
+      num.variable.missing <- length(missing.summary[indexs.missing])
      
      freq.table.miss <- data.frame( Variable = names(missing.summary[indexs.missing]), Number.of.Missing = as.integer(missing.summary[indexs.missing]), 
                                     Percentage.of.Missing = paste0(round(as.numeric(prop.table(missing.summary[indexs.missing]))*100,2)," %") )
@@ -113,7 +110,6 @@ shinyServer(function(input, output,session) {
        arrange(desc(Number.of.Missing))
      
      datatable(freq.table.miss)
-   
    })
    ########################DataFrame_SummaryEnds###############
    
@@ -192,15 +188,16 @@ shinyServer(function(input, output,session) {
    })
    ################################ Market Analysis 3D ########################  
    output$LoadvsSpeedPlot3js <- renderScatterplotThree({
-     subconL_S=OppClosed%>%
+     Df=reactdataQVT()
+     Df=Df%>%
        #filter(Market.segment==input$MarSegChoose)%>%
        group_by(`Floors/Travel/Rise`,Load,Speed,Region)%>%
        summarise(cnt=n())
-     scatterplot3js(x = as.numeric(subconL_S$Load), 
-                    y = as.numeric(subconL_S$Speed), 
-                    z=as.numeric(subconL_S$`Floors/Travel/Rise`),
-                    color=rainbow(length(subconL_S$Region)),
-                    size= subconL_S$cnt
+     scatterplot3js(x = as.numeric(Df$Load), 
+                    y = as.numeric(Df$Speed), 
+                    z=as.numeric(Df$`Floors/Travel/Rise`),
+                    color=rainbow(length(Df$Region)),
+                    size= Df$cnt
                     )
   
    })
@@ -239,10 +236,14 @@ shinyServer(function(input, output,session) {
    })
    output$tabCompMarket = renderDataTable({
      Dt=reactdataLoadvsSpeedLost()
-     Dt=Dt %>%
+     Dt=Dt %>% 
        group_by(Region,Load,Speed,cnt)%>%
        arrange(desc(cnt))%>%
-     summarise(Topcomp = paste(Winning.Competitor[min(cnt) == cnt], collapse = ","))
+     summarise(Topcomp = paste(Winning.Competitor[max(cnt) == cnt], collapse = ","))
+     Dt=Dt %>%
+       group_by(Region,Load,Speed)%>%
+       slice(which.max(cnt))%>%
+       arrange(desc(cnt))
      #Dt$`Winning.Competitor's.Bid` = paste(Dt$`Winning.Competitor's.Bid`, Dt$`Winning.Competitor's.Bid.Currency`, sep="")
      columns=c("Region","Load","Speed","cnt","Topcomp")
      datatable(Dt[,columns,drop=FALSE],filter="bottom",class = 'cell-border stripe',rownames = FALSE,
@@ -337,8 +338,6 @@ shinyServer(function(input, output,session) {
        addLegend(position="bottomright",labels=unique(Dt$Region),colors=Regionpal)
      print(m)
    })
-   
-   
    output$mapCompOppClosed = renderLeaflet({
      pal <- colorFactor(Regionpal, domain = c("West","South","North","East"))
      Filter_ClosedOpp=OppClosed
@@ -364,6 +363,47 @@ shinyServer(function(input, output,session) {
                         popup = ~htmlEscape(content))  %>%
        addLegend(position="bottomright",labels=unique(Dt$Region),colors=Regionpal)
      print(m)
+   })
+   ################################ Price Analysis View ########################  
+   output$priceComparison<- renderPlotly({
+
+     OppClosed1 = OppClosed%>%
+       filter(!is.na(`Winning.Competitor's.Bid`))%>%
+       filter(Load==1360)%>%
+       filter(Speed=="1")%>%
+       filter(Region=="South")%>%
+       group_by(Region,Load,Speed,`Winning.Competitor's.Bid`,Winning.Competitor)%>%
+        summarise(DiffPrice=mean(Amount/Quantity-`Winning.Competitor's.Bid`/Quantity)) %>%
+      
+   
+
+     OppClosed1%>%
+       filter(!is.na(`Winning.Competitor's.Bid`))%>%
+       group_by(Region,Load,Speed,`Winning.Competitor's.Bid`,Winning.Competitor)%>%
+       summarise(DiffPrice=mean(Amount-`Winning.Competitor's.Bid`)) %>%
+       arrange(desc(DiffPrice))%>%
+       top_n(5,DiffPrice)
+
+     Dt=OppClosed1%>%
+       filter(Market.segment=="Medical")%>%
+       group_by(Region,Load,Speed,`Winning.Competitor's.Bid`,Winning.Competitor)%>%
+       summarise(cnt=sum(Quantity,na.rm = TRUE),percent=paste0(round(sum(Quantity,na.rm = TRUE)/sum(OppClosed1$Quantity,na.rm = TRUE)*100,0)," %"))%>%
+       arrange(desc(Region))
+
+     Dt=Dt %>%
+       group_by(Region,Load,Speed,cnt)%>%
+       arrange(desc(cnt))%>%
+       summarise(Topcomp = paste(Winning.Competitor[max(cnt) == cnt], collapse = ","))
+
+     #Dt$Topcomp=vapply(strsplit(Dt$Topcomp, ","), function(x) paste(unique(x), collapse = ","), character(1L))
+
+     Dt=Dt %>%
+       group_by(Region,Load,Speed)%>%
+       slice(which.max(cnt))%>%
+       arrange(desc(cnt))
+
+     plot_ly(data = reactdataLoadvsSpeed(), x = Load, y = Speed,mode = "markers",
+             marker=list(size=cnt),color = Region,colors = Regionpal)
    })
    
 })

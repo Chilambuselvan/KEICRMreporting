@@ -98,6 +98,7 @@ shinyUI(
         menuItem("Data View", tabName = "DataView", icon = icon("th")),
         menuItem("Elevator Volumes (ALL)", tabName = "ElevVolumes", icon = icon("map-marker")),
         menuItem("Elevator Analysis", tabName = "ElevAnalysis", icon = icon("map-marker")),
+        menuItem("Price Analysis", tabName = "priceAnalysis", icon = icon("inr")),
         menuItem("Missing Data", tabName = "missingSummary", icon = icon("warning"))
        # menuItem("Closed opportunities", tabName = "widgets2", icon = icon("th"))
       )
@@ -214,10 +215,10 @@ shinyUI(
                   )
                 ),
                 fluidRow(
-                  
+
                   box(title = "KONE Market",width=6,status = "success", solidHeader = TRUE,collapsible = TRUE,collapsed = FALSE,
                       leafletOutput("mapKONEOppClosed")),
-               
+
                   box(title = "Competitor Market",width=6,status = "danger", solidHeader = TRUE,collapsible = TRUE,collapsed = FALSE,
                       leafletOutput("mapCompOppClosed"))
                 )
@@ -226,8 +227,27 @@ shinyUI(
                 #   box(title = "COMPETITOR Market",width=12,status = "danger", solidHeader = TRUE,collapsible = TRUE,collapsed = TRUE,
                 #       leafletOutput("mapCompMarket"))
                 # )
+        ),# Seventh tab content ends 
+        tabItem(tabName = "priceAnalysis",
+                fluidRow(
+                  column(6,
+                         selectInput(inputId = "SelLoad_Pr1","Choose Load",OppClosed$Load,multiple = TRUE)
+                  ),
+                  column(6,
+                         selectInput(inputId = "SelSpeed_Pr1","Choose Speed",OppClosed$Speed,multiple = TRUE)
+                  )
+                ),
+                fluidRow(
+                  box(title = "KONE Market",width=12,status = "success", solidHeader = TRUE,collapsible = TRUE,collapsed = FALSE,
+                      plotlyOutput("priceComparison"))
+                )
+                # ,
+                # fluidRow(
+                #   box(title = "COMPETITOR Market",width=12,status = "danger", solidHeader = TRUE,collapsible = TRUE,collapsed = TRUE,
+                #       leafletOutput("mapCompMarket"))
+                # )
         )# Seventh tab content ends
-      )
+        )
       )#dashboard Body Close
   )#dashboard page close
 )
