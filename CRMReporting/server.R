@@ -117,7 +117,7 @@ shinyServer(function(input, output,session) {
    output$TotalOpp <- renderValueBox({
      TotCounts=reactdataContot()
       valueBox(
-       paste0(TotCounts$cnt, " Nos "), "Total", icon = icon("list"),
+       paste0(TotCounts$cnt, " Nos "), paste0("Total number of Opportunity in ",input$MarSegChoose), icon = icon("list"),
        color = "aqua"
      )
      
@@ -240,6 +240,7 @@ shinyServer(function(input, output,session) {
        group_by(Region,Load,Speed,cnt)%>%
        arrange(desc(cnt))%>%
      summarise(Topcomp = paste(Winning.Competitor[max(cnt) == cnt], collapse = ","))
+     Dt$Topcomp=vapply(strsplit(Dt$Topcomp, ","), function(x) paste(unique(x), collapse = ","), character(1L))
      Dt=Dt %>%
        group_by(Region,Load,Speed)%>%
        slice(which.max(cnt))%>%
@@ -309,9 +310,7 @@ shinyServer(function(input, output,session) {
      print(m)
    })
    ################################ Elev Analysis View ########################  
-   
-   output$mapKONEOppClosed = renderLeaflet({
-     pal <- colorFactor(Regionpal, domain = c("West","South","North","East"))
+   reacttabMapviewKONE = reactive({
      Filter_ClosedOpp=OppClosed
      if(!is.null(input$SelLoad_An)){
        Filter_ClosedOpp = subset(OppClosed,OppClosed$Load %in% input$SelLoad_An)
@@ -323,12 +322,32 @@ shinyServer(function(input, output,session) {
        Filter_ClosedOpp = subset(OppClosed,OppClosed$Speed %in% input$SelSpeed_An)
        Filter_ClosedOpp = subset(Filter_ClosedOpp,Filter_ClosedOpp$Load %in% input$SelLoad_An)
      }
-     Filter_ClosedOpp$Market.segment
-     Dt=Filter_ClosedOpp %>%
+     Filter_ClosedOpp=Filter_ClosedOpp %>%
        filter(Winning.Competitor=="Kone") %>%
-       filter(Market.segment=="Medical") %>%
-         group_by(Region,Branch.Office,lat,lon) %>%
+       filter(Market.segment==input$MarSegChoose) %>%
+       group_by(Region,Branch.Office,lat,lon) %>%
        summarise(cnt=sum(Quantity,na.rm=TRUE))
+   })
+   reacttabMapviewComp = reactive({
+     Filter_ClosedOpp=OppClosed
+     if(!is.null(input$SelLoad_An)){
+       Filter_ClosedOpp = subset(OppClosed,OppClosed$Load %in% input$SelLoad_An)
+     }
+     if(!is.null(input$SelSpeed_An)){
+       Filter_ClosedOpp = subset(OppClosed,OppClosed$Speed %in% input$SelSpeed_An)
+     }
+     if(!is.null(input$SelSpeed_An) && !is.null(input$SelLoad_An)){
+       Filter_ClosedOpp = subset(OppClosed,OppClosed$Speed %in% input$SelSpeed_An)
+       Filter_ClosedOpp = subset(Filter_ClosedOpp,Filter_ClosedOpp$Load %in% input$SelLoad_An)
+     }
+     Filter_ClosedOpp=Filter_ClosedOpp %>%
+       filter(Market.segment==input$MarSegChoose && Winning.Competitor!="Kone") %>%
+       group_by(Region,Branch.Office,lat,lon) %>%
+       summarise(cnt=sum(Quantity,na.rm=TRUE))
+   })
+   output$mapKONEOppClosed = renderLeaflet({
+     pal <- colorFactor(Regionpal, domain = c("West","South","North","East"))
+     Dt = reacttabMapviewKONE()
      content <- paste0(Dt$Branch.Office," Nos: ",Dt$cnt)
      m=leaflet(na.omit(Dt)) %>% addTiles() %>%
        addCircleMarkers(data = Dt, lng = ~ lon, lat = ~ lat,
@@ -340,21 +359,7 @@ shinyServer(function(input, output,session) {
    })
    output$mapCompOppClosed = renderLeaflet({
      pal <- colorFactor(Regionpal, domain = c("West","South","North","East"))
-     Filter_ClosedOpp=OppClosed
-     if(!is.null(input$SelLoad_An)){
-       Filter_ClosedOpp = subset(OppClosed,OppClosed$Load %in% input$SelLoad_An)
-     }
-     if(!is.null(input$SelSpeed_An)){
-       Filter_ClosedOpp = subset(OppClosed,OppClosed$Speed %in% input$SelSpeed_An)
-     }
-     if(!is.null(input$SelSpeed_An) && !is.null(input$SelLoad_An)){
-       Filter_ClosedOpp = subset(OppClosed,OppClosed$Speed %in% input$SelSpeed_An)
-       Filter_ClosedOpp = subset(Filter_ClosedOpp,Filter_ClosedOpp$Load %in% input$SelLoad_An)
-     }
-     Dt=Filter_ClosedOpp %>%
-       filter(Market.segment=="Medical" && Winning.Competitor!="Kone") %>%
-       group_by(Region,Branch.Office,lat,lon) %>%
-       summarise(cnt=sum(Quantity,na.rm=TRUE))
+     Dt = reacttabMapviewComp()
      content <- paste0(Dt$Branch.Office," Nos: ",Dt$cnt)
      m=leaflet(na.omit(Dt)) %>% addTiles() %>%
        addCircleMarkers(data = Dt, lng = ~ lon, lat = ~ lat,
@@ -364,46 +369,98 @@ shinyServer(function(input, output,session) {
        addLegend(position="bottomright",labels=unique(Dt$Region),colors=Regionpal)
      print(m)
    })
+   output$tabKONEMarket_sub1 = renderDataTable({
+     Dt=reacttabMapviewKONE()
+     Dt=Dt %>%
+       arrange(desc(cnt))
+     #Dt$`Winning.Competitor's.Bid` = paste(Dt$`Winning.Competitor's.Bid`, Dt$`Winning.Competitor's.Bid.Currency`, sep="")
+     columns=c("Region","Branch.Office","cnt")
+     datatable(Dt[,columns,drop=FALSE],filter="bottom",class = 'cell-border stripe',rownames = FALSE,
+               colnames = c('REGION', 'BRANCH', 'Quantity/Count'))
+   })
+   output$tabCompMarket_sub1 = renderDataTable({
+     Dt=reacttabMapviewComp()
+     Dt=Dt %>%
+       arrange(desc(cnt))
+     #Dt$`Winning.Competitor's.Bid` = paste(Dt$`Winning.Competitor's.Bid`, Dt$`Winning.Competitor's.Bid.Currency`, sep="")
+     columns=c("Region","Branch.Office","cnt")
+     datatable(Dt[,columns,drop=FALSE],filter="bottom",class = 'cell-border stripe',rownames = FALSE,
+               colnames = c('REGION', 'BRANCH', 'Quantity/Count'))
+   })
    ################################ Price Analysis View ########################  
-   output$priceComparison<- renderPlotly({
-
-     OppClosed1 = OppClosed%>%
-       filter(!is.na(`Winning.Competitor's.Bid`))%>%
-       filter(Load==1360)%>%
-       filter(Speed=="1")%>%
-       filter(Region=="South")%>%
-       group_by(Region,Load,Speed,`Winning.Competitor's.Bid`,Winning.Competitor)%>%
-        summarise(DiffPrice=mean(Amount/Quantity-`Winning.Competitor's.Bid`/Quantity)) %>%
-      
-   
-
-     OppClosed1%>%
-       filter(!is.na(`Winning.Competitor's.Bid`))%>%
-       group_by(Region,Load,Speed,`Winning.Competitor's.Bid`,Winning.Competitor)%>%
-       summarise(DiffPrice=mean(Amount-`Winning.Competitor's.Bid`)) %>%
-       arrange(desc(DiffPrice))%>%
-       top_n(5,DiffPrice)
-
-     Dt=OppClosed1%>%
+   reactPriceAnalysis = reactive({
+     Filter_ClosedOpp=OppClosed %>%
+       filter(!is.na(Winning.Competitor)) %>%
+         filter(Market.segment==input$MarSegChoose)
+     
+     # if(!is.null(input$SelRegion_Pr1)){
+     # Filter_ClosedOpp=Filter_ClosedOpp %>%
+     #   filter(Region %in% SelRegion_Pr1)
+     # }
+     })
+   reacttabMarkettop5=reactive({
+     Dt=OppClosed%>%
        filter(Market.segment=="Medical")%>%
        group_by(Region,Load,Speed,`Winning.Competitor's.Bid`,Winning.Competitor)%>%
-       summarise(cnt=sum(Quantity,na.rm = TRUE),percent=paste0(round(sum(Quantity,na.rm = TRUE)/sum(OppClosed1$Quantity,na.rm = TRUE)*100,0)," %"))%>%
+       summarise(cnt=sum(Quantity,na.rm = TRUE),percent=paste0(round(sum(Quantity,na.rm = TRUE)/sum(OppClosed$Quantity,na.rm = TRUE)*100,0)," %"))%>%
        arrange(desc(Region))
-
-     Dt=Dt %>%
+     
+     Dt=Dt %>% 
        group_by(Region,Load,Speed,cnt)%>%
        arrange(desc(cnt))%>%
        summarise(Topcomp = paste(Winning.Competitor[max(cnt) == cnt], collapse = ","))
-
-     #Dt$Topcomp=vapply(strsplit(Dt$Topcomp, ","), function(x) paste(unique(x), collapse = ","), character(1L))
-
+     Dt$Topcomp=vapply(strsplit(Dt$Topcomp, ","), function(x) paste(unique(x), collapse = ","), character(1L))
      Dt=Dt %>%
        group_by(Region,Load,Speed)%>%
        slice(which.max(cnt))%>%
        arrange(desc(cnt))
-
-     plot_ly(data = reactdataLoadvsSpeed(), x = Load, y = Speed,mode = "markers",
-             marker=list(size=cnt),color = Region,colors = Regionpal)
+     
    })
    
+   output$priceComparison<- renderPlotly({
+
+     #Dt$Topcomp=vapply(strsplit(Dt$Topcomp, ","), function(x) paste(unique(x), collapse = ","), character(1L))
+
+     Filter_ClosedOpp=reactPriceAnalysis()
+     
+     if(!is.null(input$SelLoad_Pr1)){
+       Filter_ClosedOpp = subset(Filter_ClosedOpp,Filter_ClosedOpp$Load %in% input$SelLoad_Pr1)
+     }
+     if(!is.null(input$SelSpeed_Pr1)){
+       Filter_ClosedOpp = subset(Filter_ClosedOpp,Filter_ClosedOpp$Speed %in% input$SelSpeed_Pr1)
+     }
+     if(!is.null(input$SelRegion_Pr1)){
+       Filter_ClosedOpp = subset(Filter_ClosedOpp,Filter_ClosedOpp$Region %in% input$SelRegion_Pr1)
+     }
+     
+     plot_ly(data = Filter_ClosedOpp, y = Filter_ClosedOpp$PerUnitPrice,color = Filter_ClosedOpp$Winning.Competitor, type = "box")
+       
+   })
+   output$priceComparison2<- renderPlotly({
+     
+     #Dt$Topcomp=vapply(strsplit(Dt$Topcomp, ","), function(x) paste(unique(x), collapse = ","), character(1L))
+     
+     Filter_ClosedOpp=reactPriceAnalysis()
+     
+     if(!is.null(input$SelLoad_Pr1)){
+       Filter_ClosedOpp = subset(Filter_ClosedOpp,Filter_ClosedOpp$Load %in% input$SelLoad_Pr1)
+     }
+     if(!is.null(input$SelSpeed_Pr1)){
+       Filter_ClosedOpp = subset(Filter_ClosedOpp,Filter_ClosedOpp$Speed %in% input$SelSpeed_Pr1)
+     }
+     if(!is.null(input$SelRegion_Pr1)){
+       Filter_ClosedOpp = subset(Filter_ClosedOpp,Filter_ClosedOpp$Region %in% input$SelRegion_Pr1)
+     }
+     
+     plot_ly(data = Filter_ClosedOpp, y = Filter_ClosedOpp$PerUnitPrice,x=Filter_ClosedOpp$Speed, color = Filter_ClosedOpp$Winning.Competitor, type = "box") %>%
+       layout(boxmode = "group")
+   })
+   
+   
+   output$tabPriceAnalysis = renderDataTable({
+     #Dt$`Winning.Competitor's.Bid` = paste(Dt$`Winning.Competitor's.Bid`, Dt$`Winning.Competitor's.Bid.Currency`, sep="")
+     columns=c("Region","Load","Speed","cnt","Topcomp")
+     datatable(Dt[,columns,drop=FALSE],filter="bottom",class = 'cell-border stripe',rownames = FALSE,
+               colnames = c('REGION', 'LOAD', 'SPEED','Quantity/Count','Competitor'))
+   })
 })

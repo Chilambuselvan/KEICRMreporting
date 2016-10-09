@@ -41,31 +41,21 @@ if (FALSE){
   OppClosed=left_join(OppClosed,BranchMapping,by=c("Branch.Office"="Bcity...1."))
   OppOpen=left_join(OppOpen,BranchMapping,by=c("Branch.Office"="Bcity...1."))
   
-  if (grepl("*T*",OppClosed$`Capacity/Inclination`,ignore.case = TRUE)==TRUE)
-  {
-    OppClosed$Load=as.numeric(sub("T", "e3", OppClosed$`Capacity/Inclination`, fixed = TRUE))
-  }
-  if (grepl("*K*",OppClosed$`Capacity/Inclination`,ignore.case = TRUE)==TRUE)
-  {
-    OppClosed$Load=as.numeric(sub("K", "e3", OppClosed$`Capacity/Inclination`, fixed = TRUE))
-  }
-  if (OppClosed$Load<1000)
-  {
-    OppClosed$Load=as.numeric(OppClosed$`Capacity/Inclination`,rm.na=TRUE)*68
-  }
+  OppClosed$PerUnitPrice =  OppClosed$Total.Price/OppClosed$Quantity
+  OppOpen$PerUnitPrice =  OppOpen$Total.Price/OppOpen$Quantity
   
-  if (grepl("*T*",OppOpen$`Capacity/Inclination`,ignore.case = TRUE)==TRUE)
-  {
+  OppClosed$`Winning.Competitor's.Bid` = ifelse(grepl("*kone*",OppClosed$Winning.Competitor,ignore.case = TRUE),
+    OppClosed$Amount,OppClosed$`Winning.Competitor's.Bid`)
+  
+ 
+    OppClosed$Load=as.numeric(sub("T", "e3", OppClosed$`Capacity/Inclination`, fixed = TRUE))
+    OppClosed$Load=as.numeric(sub("K", "e3", OppClosed$`Capacity/Inclination`, fixed = TRUE))
+    OppClosed$Load=as.numeric(OppClosed$`Capacity/Inclination`,rm.na=TRUE)*68
+
     OppOpen$Load=as.numeric(sub("T", "e3", OppOpen$`Capacity/Inclination`, fixed = TRUE))
-  }
-  if (grepl("*K*",OppOpen$`Capacity/Inclination`,ignore.case = TRUE)==TRUE)
-  {
     OppOpen$Load=as.numeric(sub("K", "e3", OppOpen$`Capacity/Inclination`, fixed = TRUE))
-  }
-  if (OppOpen$Load<1000)
-  {
     OppOpen$Load=as.numeric(OppOpen$`Capacity/Inclination`,rm.na=TRUE)*68
-  }
+
   ConsolidatedOpp = rbind(OppClosed,OppOpen)
   Regionpal=c("forestgreen", "darkorange", "deepskyblue", "dimgray")
   ################################################# Preparing Geo Code fetching####################################
@@ -116,9 +106,10 @@ shinyUI(
         tabItem(tabName = "dashboard",
                 fluidRow(
                  selectInput(inputId = "MarSegChoose","Market Segment",ClosedMarketSeg,multiple = FALSE),
-                 valueBoxOutput("TotalOpp"),
-                 valueBoxOutput("ClosedSuccess"),
-                 valueBoxOutput("ClosedSuccessPer")
+                 valueBoxOutput("TotalOpp",width=6)
+                 # ,
+                 # valueBoxOutput("ClosedSuccess"),
+                 # valueBoxOutput("ClosedSuccessPer")
                  ),#fluidrow ends
                 fluidRow(
                   box(plotlyOutput("DashSuccessChart", height = 350),status = "success"),
@@ -128,22 +119,22 @@ shinyUI(
         # Second tab content
         tabItem(tabName = "widgets",
                 fluidRow(
-                  box(title="OVERALL MARKET",
+                  box(title="OVERALL",
                       plotlyOutput("LoadvsSpeedPlotMkt", height = 350),width=12,status = "warning", solidHeader = TRUE,collapsible = TRUE)
                 ),
                 fluidRow(
-                  box(title = "KONE MARKET",
+                  box(title = "KONE",
                     plotlyOutput("LoadvsSpeedPlot", height = 350),width=12,status = "success", solidHeader = TRUE,collapsible = TRUE,collapsed = TRUE)
                         ),
                 fluidRow(
-                  box(title = "COMPETITOR MARKET",
+                  box(title = "COMPETITOR",
                     plotlyOutput("LoadvsSpeedPlotLost", height = 350),width=12,status = "danger", solidHeader = TRUE,collapsible = TRUE,collapsed = TRUE)
                 )
         ),# Second tab content ends
         # Third tab content
         tabItem(tabName = "3Dview",
               fluidRow(
-                  box(title = "3D view MARKET",width=12,status = "info", solidHeader = TRUE,collapsible = TRUE,collapsed = FALSE,
+                  box(title = "3D view",width=12,status = "info", solidHeader = TRUE,collapsible = TRUE,collapsed = FALSE,
                       scatterplotThreeOutput("LoadvsSpeedPlot3js"))
                 )
         ),# Third tab content ends
@@ -164,15 +155,15 @@ shinyUI(
         # Fifth tab content
         tabItem(tabName = "DataView",
                 fluidRow(
-                  box(title = "Overall Market",width=12,status = "warning", solidHeader = TRUE,collapsible = TRUE,collapsed = TRUE,
+                  box(title = "Overall",width=12,status = "warning", solidHeader = TRUE,collapsible = TRUE,collapsed = TRUE,
                       dataTableOutput("tabOverAllMarket"))
                 ),
                 fluidRow(
-                  box(title = "KONE Market",width=12,status = "success", solidHeader = TRUE,collapsible = TRUE,collapsed = TRUE,
+                  box(title = "KONE",width=12,status = "success", solidHeader = TRUE,collapsible = TRUE,collapsed = TRUE,
                       dataTableOutput("tabKONEMarket"))
                 ),
                 fluidRow(
-                  box(title = "COMPETITOR Market",width=12,status = "danger", solidHeader = TRUE,collapsible = TRUE,collapsed = TRUE,
+                  box(title = "COMPETITOR",width=12,status = "danger", solidHeader = TRUE,collapsible = TRUE,collapsed = TRUE,
                       dataTableOutput("tabCompMarket"))
                 )
         ),# Sixth tab content ends
@@ -186,7 +177,7 @@ shinyUI(
                   )
                 ),
                 fluidRow(
-                  box(title = "Overall Market (Region Wise)",width=12,status = "warning", solidHeader = TRUE,collapsible = TRUE,collapsed = TRUE,
+                  box(title = "Overall (Region Wise)",width=12,status = "warning", solidHeader = TRUE,collapsible = TRUE,collapsed = TRUE,
                       leafletOutput("mapOverAllMarket"))
                 ),
                 fluidRow(
@@ -200,7 +191,7 @@ shinyUI(
                 )
                 # ,
                 # fluidRow(
-                #   box(title = "COMPETITOR Market",width=12,status = "danger", solidHeader = TRUE,collapsible = TRUE,collapsed = TRUE,
+                #   box(title = "COMPETITOR",width=12,status = "danger", solidHeader = TRUE,collapsible = TRUE,collapsed = TRUE,
                 #       leafletOutput("mapCompMarket"))
                 # )
         ),# Sixth tab content ends
@@ -216,11 +207,19 @@ shinyUI(
                 ),
                 fluidRow(
 
-                  box(title = "KONE Market",width=6,status = "success", solidHeader = TRUE,collapsible = TRUE,collapsed = FALSE,
+                  box(title = "KONE",width=6,status = "success", solidHeader = TRUE,collapsible = TRUE,collapsed = FALSE,
                       leafletOutput("mapKONEOppClosed")),
 
-                  box(title = "Competitor Market",width=6,status = "danger", solidHeader = TRUE,collapsible = TRUE,collapsed = FALSE,
+                  box(title = "Competitor",width=6,status = "danger", solidHeader = TRUE,collapsible = TRUE,collapsed = FALSE,
                       leafletOutput("mapCompOppClosed"))
+                ),
+                fluidRow(
+                  
+                  box(title = "KONE",width=6,status = "success", solidHeader = FALSE,collapsible = TRUE,collapsed = FALSE,
+                      dataTableOutput("tabKONEMarket_sub1")),
+                  
+                  box(title = "COMPETITOR",width=6,status = "danger", solidHeader = FALSE,collapsible = TRUE,collapsed = FALSE,
+                      dataTableOutput("tabCompMarket_sub1"))
                 )
                 # ,
                 # fluidRow(
@@ -230,17 +229,30 @@ shinyUI(
         ),# Seventh tab content ends 
         tabItem(tabName = "priceAnalysis",
                 fluidRow(
-                  column(6,
+                  column(4,
                          selectInput(inputId = "SelLoad_Pr1","Choose Load",OppClosed$Load,multiple = TRUE)
                   ),
-                  column(6,
+                  column(4,
                          selectInput(inputId = "SelSpeed_Pr1","Choose Speed",OppClosed$Speed,multiple = TRUE)
+                  ),
+                  column(4,
+                         selectInput(inputId = "SelRegion_Pr1","Choose Region",unique(OppClosed$Region),multiple = TRUE)
                   )
+                  
                 ),
                 fluidRow(
-                  box(title = "KONE Market",width=12,status = "success", solidHeader = TRUE,collapsible = TRUE,collapsed = FALSE,
+                  box(title = "Price Analysis",width=12,status = "success", solidHeader = TRUE,collapsible = TRUE,collapsed = FALSE,
                       plotlyOutput("priceComparison"))
-                )
+                ),
+                fluidRow(
+                  box(title = "Price Analysis (Option2)",width=12,status = "success", solidHeader = TRUE,collapsible = TRUE,collapsed = FALSE,
+                      plotlyOutput("priceComparison2"))
+                ),
+                fluidRow(
+                box(title = "DataView",width=6,status = "danger", solidHeader = FALSE,collapsible = TRUE,collapsed = FALSE,
+                    dataTableOutput("tabPriceAnalysis"))
+                ) 
+                
                 # ,
                 # fluidRow(
                 #   box(title = "COMPETITOR Market",width=12,status = "danger", solidHeader = TRUE,collapsible = TRUE,collapsed = TRUE,
