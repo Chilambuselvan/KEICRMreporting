@@ -401,27 +401,14 @@ shinyServer(function(input, output,session) {
    reacttabMarkettop5=reactive({
      Dt=OppClosed%>%
        filter(Market.segment=="Medical")%>%
-       group_by(Region,Load,Speed,`Winning.Competitor's.Bid`,Winning.Competitor)%>%
+       group_by(Region,Load,Speed,Winning.Competitor)%>%
        summarise(cnt=sum(Quantity,na.rm = TRUE),percent=paste0(round(sum(Quantity,na.rm = TRUE)/sum(OppClosed$Quantity,na.rm = TRUE)*100,0)," %"))%>%
        arrange(desc(Region))
-     
-     Dt=Dt %>% 
-       group_by(Region,Load,Speed,cnt)%>%
-       arrange(desc(cnt))%>%
-       summarise(Topcomp = paste(Winning.Competitor[max(cnt) == cnt], collapse = ","))
-     Dt$Topcomp=vapply(strsplit(Dt$Topcomp, ","), function(x) paste(unique(x), collapse = ","), character(1L))
-     Dt=Dt %>%
-       group_by(Region,Load,Speed)%>%
-       slice(which.max(cnt))%>%
-       arrange(desc(cnt))
-     
    })
    
    output$priceComparison<- renderPlotly({
 
-     #Dt$Topcomp=vapply(strsplit(Dt$Topcomp, ","), function(x) paste(unique(x), collapse = ","), character(1L))
-
-     Filter_ClosedOpp=reactPriceAnalysis()
+       Filter_ClosedOpp=reactPriceAnalysis()
      
      if(!is.null(input$SelLoad_Pr1)){
        Filter_ClosedOpp = subset(Filter_ClosedOpp,Filter_ClosedOpp$Load %in% input$SelLoad_Pr1)
@@ -433,8 +420,10 @@ shinyServer(function(input, output,session) {
        Filter_ClosedOpp = subset(Filter_ClosedOpp,Filter_ClosedOpp$Region %in% input$SelRegion_Pr1)
      }
      
-     plot_ly(data = Filter_ClosedOpp, y = Filter_ClosedOpp$PerUnitPrice,color = Filter_ClosedOpp$Winning.Competitor, type = "box")
-       
+     plot_ly(data = Filter_ClosedOpp, y = Filter_ClosedOpp$PerUnitPrice,color = Filter_ClosedOpp$Winning.Competitor, type = "box")%>%
+     layout(yaxis=list(title = "Unit Price (INR)"))
+      
+     
    })
    output$priceComparison2<- renderPlotly({
      
@@ -451,16 +440,31 @@ shinyServer(function(input, output,session) {
      if(!is.null(input$SelRegion_Pr1)){
        Filter_ClosedOpp = subset(Filter_ClosedOpp,Filter_ClosedOpp$Region %in% input$SelRegion_Pr1)
      }
-     
      plot_ly(data = Filter_ClosedOpp, y = Filter_ClosedOpp$PerUnitPrice,x=Filter_ClosedOpp$Speed, color = Filter_ClosedOpp$Winning.Competitor, type = "box") %>%
-       layout(boxmode = "group")
+       layout(boxmode = "group") %>%
+       layout(xaxis=list(title = "Speed"),yaxis=list(title = "Unit Price (INR)"))
    })
    
-   
    output$tabPriceAnalysis = renderDataTable({
-     #Dt$`Winning.Competitor's.Bid` = paste(Dt$`Winning.Competitor's.Bid`, Dt$`Winning.Competitor's.Bid.Currency`, sep="")
-     columns=c("Region","Load","Speed","cnt","Topcomp")
+     Dt=reacttabMarkettop5()
+     Dt=Dt %>% 
+       group_by(Region,Load,Speed)%>%
+       arrange(desc(cnt))%>%
+       summarise(TopSeller = paste(Winning.Competitor[max(cnt) == cnt], collapse = ","))
+     Dt$TopSeller=vapply(strsplit(Dt$TopSeller, ","), function(x) paste(unique(x), collapse = ","), character(1L))
+        #   
+       if(!is.null(input$SelLoad_Pr1)){
+         Dt = subset(Dt,Dt$Load %in% input$SelLoad_Pr1)
+       }
+     if(!is.null(input$SelSpeed_Pr1)){
+       Dt = subset(Dt,Dt$Speed %in% input$SelSpeed_Pr1)
+     }
+     # if(!is.null(input$SelRegion_Pr1)){
+     #   Dt = subset(Dt,Dt$Region %in% input$SelRegion_Pr1)
+     # }
+      #Dt$`Winning.Competitor's.Bid` = paste(Dt$`Winning.Competitor's.Bid`, Dt$`Winning.Competitor's.Bid.Currency`, sep="")
+     columns=c("Region","Load","Speed","TopSeller")
      datatable(Dt[,columns,drop=FALSE],filter="bottom",class = 'cell-border stripe',rownames = FALSE,
-               colnames = c('REGION', 'LOAD', 'SPEED','Quantity/Count','Competitor'))
+               colnames = c('REGION', 'LOAD', 'SPEED','TOP SELLER'))
    })
 })

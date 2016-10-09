@@ -249,7 +249,7 @@ shinyUI(
                       plotlyOutput("priceComparison2"))
                 ),
                 fluidRow(
-                box(title = "DataView",width=6,status = "danger", solidHeader = FALSE,collapsible = TRUE,collapsed = FALSE,
+                box(title = "TOP SELLER FOR SELECTION",width=12,status = "warning", solidHeader = TRUE,collapsible = TRUE,collapsed = FALSE,
                     dataTableOutput("tabPriceAnalysis"))
                 ) 
                 
