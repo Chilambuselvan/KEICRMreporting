@@ -400,7 +400,7 @@ shinyServer(function(input, output,session) {
      })
    reacttabMarkettop5=reactive({
      Dt=OppClosed%>%
-       filter(Market.segment=="Medical")%>%
+       filter(Market.segment==input$MarSegChoose)%>%
        group_by(Region,Load,Speed,Winning.Competitor)%>%
        summarise(cnt=sum(Quantity,na.rm = TRUE),percent=paste0(round(sum(Quantity,na.rm = TRUE)/sum(OppClosed$Quantity,na.rm = TRUE)*100,0)," %"))%>%
        arrange(desc(Region))
