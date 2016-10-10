@@ -407,7 +407,9 @@ shinyServer(function(input, output,session) {
    })
    
    output$priceComparison<- renderPlotly({
-
+     
+    
+     
        Filter_ClosedOpp=reactPriceAnalysis()
      
      if(!is.null(input$SelLoad_Pr1)){
@@ -419,16 +421,21 @@ shinyServer(function(input, output,session) {
      if(!is.null(input$SelRegion_Pr1)){
        Filter_ClosedOpp = subset(Filter_ClosedOpp,Filter_ClosedOpp$Region %in% input$SelRegion_Pr1)
      }
+       
+       WestDF = Filter_ClosedOpp%>%
+        group_by(Winning.Competitor)%>%
+         summarise(cnt=median(PerUnitPrice,na.rm=TRUE))
      
      plot_ly(data = Filter_ClosedOpp, y = Filter_ClosedOpp$PerUnitPrice,color = Filter_ClosedOpp$Winning.Competitor, type = "box")%>%
-     layout(yaxis=list(title = "Unit Price (INR)"))
+       add_trace(x = WestDF$Winning.Competitor ,y = WestDF$cnt,showlegend=FALSE,text=round(WestDF$cnt,0), mode="text",hoverinfo='none',textposition = "top right") %>%
+       layout(yaxis=list(title = "Unit Price (INR)"))
       
      
    })
    output$priceComparison2<- renderPlotly({
      
      #Dt$Topcomp=vapply(strsplit(Dt$Topcomp, ","), function(x) paste(unique(x), collapse = ","), character(1L))
-     
+ 
      Filter_ClosedOpp=reactPriceAnalysis()
      
      if(!is.null(input$SelLoad_Pr1)){
