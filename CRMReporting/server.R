@@ -201,20 +201,7 @@ shinyServer(function(input, output,session) {
                     )
   
    })
-   ################################ Opportunities Analysis ########################  
-   output$PriceMarginWon = renderDataTable({
-     Dt=reactdataOppWon()
-     columns=c("Region","Opportunity.Name","SalesPrice","Opportunity.Quantity")
-     datatable(Dt[,columns,drop=FALSE],filter="top")
-   })
-   output$PriceMarginLost = renderDataTable({
-     Dt=reactdataOppLost()
-     #Dt$`Winning.Competitor's.Bid` = paste(Dt$`Winning.Competitor's.Bid`, Dt$`Winning.Competitor's.Bid.Currency`, sep="")
-     columns=c("Region","Opportunity.Name","Opportunity.Quantity","Winning.Competitor's.Bid","DiffPrice")
-     datatable(Dt[,columns,drop=FALSE],filter="top",
-               colnames = c('Region', 'Opp.Name', 'Qty', 'Competitor price', 'Price Difference'))
-      
-   })
+   
    ################################ Data View ########################  
    output$tabOverAllMarket = renderDataTable({
      Dt=reactdataLoadvsSpeedMkt()
@@ -297,7 +284,7 @@ shinyServer(function(input, output,session) {
           addLegend(position="bottomright",labels=unique(Dt$Region),colors=Regionpal)
       print(m)
    })
-  
+   
    output$mapKONEMarket = renderLeaflet({
      Dt1=reactmapOverall()
      content <- paste0(Dt1$administrative_area_level_1," Nos: ",Dt1$cnt)
@@ -473,5 +460,41 @@ shinyServer(function(input, output,session) {
      columns=c("Region","Load","Speed","TopSeller")
      datatable(Dt[,columns,drop=FALSE],filter="bottom",class = 'cell-border stripe',rownames = FALSE,
                colnames = c('REGION', 'LOAD', 'SPEED','TOP SELLER'))
+   })
+   
+   ################################ Seller Comparison ########################  
+   reactSellerComp = reactive({
+     OppClosed %>%
+       filter(!is.na(Winning.Competitor), !is.na(Quantity)) %>%
+       filter(Market.segment=="Medical")
+     })
+   output$SellerComparison<- renderPlotly({
+     Filter_ClosedOpp=reactSellerComp()
+     if(!is.null(input$SelLoad_br1)){
+       Filter_ClosedOpp = subset(Filter_ClosedOpp,Filter_ClosedOpp$Load %in% input$SelLoad_br1)
+     }
+     if(!is.null(input$SelSpeed_br1)){
+       Filter_ClosedOpp = subset(Filter_ClosedOpp,Filter_ClosedOpp$Speed %in% input$SelSpeed_br1)
+     }
+     if(!is.null(input$SelRegion_br1)){
+       Filter_ClosedOpp = subset(Filter_ClosedOpp,Filter_ClosedOpp$Region %in% input$SelRegion_br1)
+     }
+
+     Filter_ClosedOpp=Filter_ClosedOpp %>%
+      group_by(Winning.Competitor) %>%
+        summarise(cnt=sum(Quantity)) %>%
+          top_n(10,cnt) %>%
+            arrange(desc(cnt))
+     # 
+     # WestDF = Filter_ClosedOpp%>%
+     #   group_by(Winning.Competitor)%>%
+     #   summarise(cnt=median(PerUnitPrice,na.rm=TRUE))
+     
+     plot_ly(x = Filter_ClosedOpp$Winning.Competitor, y = Filter_ClosedOpp$cnt, color = Filter_ClosedOpp$Winning.Competitor
+             ,type="bar") %>%
+       add_trace(x = Filter_ClosedOpp$Winning.Competitor ,y = Filter_ClosedOpp$cnt,showlegend=FALSE,text=round(Filter_ClosedOpp$cnt,0),
+                 mode="text",hoverinfo='none',textposition = "top middle") %>%
+                   layout(yaxis=list(title="Quantity"),xaxis=list(title="Company"))
+     
    })
 })

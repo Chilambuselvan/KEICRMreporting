@@ -98,11 +98,12 @@ shinyUI(
         menuItem("Dashboard", tabName = "dashboard", icon = icon("dashboard")),
         menuItem("Market Analysis", tabName = "widgets", icon = icon("balance-scale")),
         menuItem("Market Analysis 3D", tabName = "3Dview", icon = icon("bars")),
-        menuItem("Price Analysis", tabName = "OppAnalysis", icon = icon("inr")),
+        # menuItem("Price Analysis", tabName = "OppAnalysis", icon = icon("inr")),
         menuItem("Data View", tabName = "DataView", icon = icon("th")),
         menuItem("Elevator Volumes (ALL)", tabName = "ElevVolumes", icon = icon("map-marker")),
         menuItem("Elevator Analysis", tabName = "ElevAnalysis", icon = icon("map-marker")),
         menuItem("Price Analysis", tabName = "priceAnalysis", icon = icon("inr")),
+        menuItem("TOP SELLER", tabName = "UnitAnalysis", icon = icon("bar-chart")),
         menuItem("Missing Data", tabName = "missingSummary", icon = icon("warning"))
        # menuItem("Closed opportunities", tabName = "widgets2", icon = icon("th"))
       )
@@ -152,20 +153,6 @@ shinyUI(
                       scatterplotThreeOutput("LoadvsSpeedPlot3js"))
                 )
         ),# Third tab content ends
-        # Fourth tab content
-        tabItem(tabName = "OppAnalysis",
-                fluidRow(
-                selectInput(inputId = "selectRow","Choose Column",colnames(OppClosed),multiple = TRUE)
-                ),
-                fluidRow(
-                  box(title = "Price Margin (LOST)",width=12,status = "warning", solidHeader = TRUE,collapsible = TRUE,collapsed = TRUE,
-                      dataTableOutput("PriceMarginLost"))
-                ),
-                fluidRow(
-                  box(title = "Price Margin (WON)",width=12,status = "success", solidHeader = TRUE,collapsible = TRUE,collapsed = TRUE,
-                      dataTableOutput("PriceMarginWon"))
-                )
-        ),# Fourth tab content ends
         # Fifth tab content
         tabItem(tabName = "DataView",
                 fluidRow(
@@ -272,7 +259,26 @@ shinyUI(
                 #   box(title = "COMPETITOR Market",width=12,status = "danger", solidHeader = TRUE,collapsible = TRUE,collapsed = TRUE,
                 #       leafletOutput("mapCompMarket"))
                 # )
-        )# Seventh tab content ends
+        ),# Seventh tab content ends UnitAnalysis
+        
+        tabItem(tabName = "UnitAnalysis",
+                fluidRow(
+                  column(4,
+                         selectInput(inputId = "SelLoad_br1","Choose Load",OppClosed$Load,multiple = TRUE)
+                  ),
+                  column(4,
+                         selectInput(inputId = "SelSpeed_br1","Choose Speed",OppClosed$Speed,multiple = TRUE)
+                  ),
+                  column(4,
+                         selectInput(inputId = "SelRegion_br1","Choose Region",unique(OppClosed$Region),multiple = TRUE)
+                  )
+                ),
+                fluidRow(
+                  box(title = "TOP SELLERS",width=12,status = "warning", solidHeader = TRUE,collapsible = TRUE,collapsed = FALSE,
+                      plotlyOutput("SellerComparison"))
+                ) 
+              )
+        
         )
       )#dashboard Body Close
   )#dashboard page close
