@@ -39,10 +39,8 @@ suppressMessages(library(shiny))
 
 #setwd("F:/Official/KEICRMreporting/CRMReporting/Data")
 if (FALSE){
-  OppClosed = read.xlsx("closed.xlsx",sheet = 1,startRow = 1, colNames = TRUE,
-                        detectDates = TRUE,rowNames = FALSE)
-  OppOpen = read.xlsx("open.xlsx",sheet = 1,startRow = 1, colNames = TRUE,
-                      detectDates = TRUE,rowNames = FALSE)
+  OppClosed = read.xlsx("closed.xlsx",sheet = 1,startRow = 1, colNames = TRUE,detectDates = TRUE,rowNames = FALSE)
+  OppOpen = read.xlsx("open.xlsx",sheet = 1,startRow = 1, colNames = TRUE,detectDates = TRUE,rowNames = FALSE)
   OppClosed$Branch.Office=sub(" MP", "", OppClosed$Branch.Office, fixed = TRUE)
   OppOpen$Branch.Office=sub(" MP", "", OppOpen$Branch.Office, fixed = TRUE)
   ClosedMarketSeg=unique(OppClosed$Market.segment)

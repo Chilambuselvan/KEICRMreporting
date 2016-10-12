@@ -138,54 +138,54 @@ shinyServer(function(input, output,session) {
     )
   })
    output$DashSuccessChart<-renderPlotly({
-     plot_ly(data=reactdataConSum(),x = Region ,y = cnt,showlegend=FALSE,type="bar",color = Region,colors = Regionpal)%>%
-     add_trace(x = Region, y=cnt,text=cnt,mode="text",textposition ="top middle",
-               showlegend=FALSE,hoverinfo="none")%>%
-      layout(xaxis=list(title = "Region"),yaxis=list(title = "Quantity"))%>%
-       layout(title="Opportunity Won Region Wise")
+     
+     plot_ly(data = reactdataConSum(),x = ~Region ,y = ~cnt,showlegend=FALSE,type="bar",text=~cnt,color = ~Region,colors = Regionpal)%>%
+     layout(xaxis=list(title = "Region"),yaxis=list(title = "Quantity"))%>%
+       layout(title="Opportunity Won Region Wise",
+              annotations = list(x = ~Region , y = ~cnt, text = ~cnt,
+                                 xanchor = 'center', yanchor = 'bottom', 
+                                 showarrow = FALSE))
    })
    output$TopCompetitor<-renderPlotly({
-     plot_ly(data=reactdataCompet(),x = Region ,y = cnt,showlegend=FALSE,type="bar",color = Region,colors = Regionpal)%>%
-       add_trace(x = Region, y=cnt,text=cnt,mode="text",textposition ="top middle",
-                 showlegend=FALSE,hoverinfo="none")%>%
+     plot_ly(data=reactdataCompet(),x = ~Region ,y = ~cnt,showlegend=FALSE,type="bar",color = ~Region,colors = Regionpal)%>%
        layout(mode="stack",xaxis=list(title = "Region"),yaxis=list(title = "Quantity"))%>%
-       layout(title="Opportunity Lost Region Wise")
+       layout(title="Opportunity Lost Region Wise",
+              annotations = list(x = ~Region , y = ~cnt, text = ~cnt,
+                                 xanchor = 'center', yanchor = 'bottom', 
+                                 showarrow = FALSE))
    })
    ################################ Market Analysis  ########################  
    output$LoadvsSpeedPlotMkt<- renderPlotly({
-     # reactdf1=reactdatamarker()
-     # a <- list()
-     # for (i in seq_len(nrow(reactdf1))) {
-     #   m <- reactdf1[i, ]
-     #   a[[i]] <- list(
-     #     x = m$Load,
-     #     y = m$Speed,
-     #     text = paste0(m$Winning.Competitor," ",m$Region," ",m$cnt),
-     #     xref = "x",
-     #     yref = "y",
-     #     showarrow = TRUE,
-     #     arrowhead = 7,
-     #     ax = 20,
-     #     ay = -40
-     #   )
-     # }
-     plot_ly(data = reactdataLoadvsSpeedMkt(), x = Load, y = Speed,mode = "markers",text=paste0(cnt," nos "),
-            marker=list(size=cnt),color = Region,colors = Regionpal)
+      df = reactdataLoadvsSpeedMkt()
+     plot_ly(data = df,x = ~Load, y = ~Speed,type="scatter",mode="markers",text=paste0(df$cnt," Nos"),size = df$cnt,
+             marker = list(opacity = 0.5,sizemode="diameter",sizeref=1),color = ~Region,colors = Regionpal)
     # layout(annotations = a)   
      # add_trace(data = reactdatamarker(),x = Load, y = Speed,mode = "text",
      #           text=paste0("Load = ",Load," Speed=",Speed," & ",cnt," nos "),
      #                     marker=list(size=cnt))
    })
    output$LoadvsSpeedPlot<- renderPlotly({
+     df = reactdataLoadvsSpeed()
+         plot_ly(data = df, x = ~Load, y = ~Speed,type="scatter",mode="markers",text=paste0(df$cnt," Nos"),size = df$cnt,
+             marker = list( opacity = 0.5,sizemode="diameter",sizeref=1),color = ~Region,colors = Regionpal)
      
-         plot_ly(data = reactdataLoadvsSpeed(), x = Load, y = Speed,mode = "markers",
-           marker=list(size=cnt),color = Region,colors = Regionpal) 
      })
    output$LoadvsSpeedPlotLost<- renderPlotly({
-      plot_ly(data = reactdataLoadvsSpeedLost(), x = Load, y = Speed,mode = "markers",
-             marker=list(size=cnt),color = Region,colors = Regionpal) 
      
-   })
+     # plot_ly(data = reactdataLoadvsSpeedLost(), x = ~Load, y = ~Speed,type="scatter",mode="markers",
+     #         marker = list(size = ~cnt, opacity = 0.5),color = ~Region,colors = Regionpal)
+     
+     df=OppClosed%>%
+       filter(Lost ==1)%>%
+       filter(Market.segment==input$MarSegChoose)%>%
+       group_by(Region,Load,Speed)%>%
+       summarise(cnt=sum(Quantity,na.rm = TRUE),percent=paste0(round(sum(Quantity,na.rm = TRUE)/sum(OppClosed$Quantity,na.rm = TRUE)*100,0)," %"))%>%
+       arrange(desc(Region))
+     
+     plot_ly(data = df, x = ~Load, y = ~Speed,type="scatter",mode="markers", text=paste0(df$cnt," Nos"),size = df$cnt,
+             marker = list(opacity = 0.5,sizemode="diameter",sizeref=1),color = ~Region,colors = Regionpal)
+     
+     })
    ################################ Market Analysis 3D ########################  
    output$LoadvsSpeedPlot3js <- renderScatterplotThree({
      Df=reactdataQVT()
