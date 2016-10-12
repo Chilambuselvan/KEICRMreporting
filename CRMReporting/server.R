@@ -414,11 +414,11 @@ shinyServer(function(input, output,session) {
          summarise(cnt=median(PerUnitPrice,na.rm=TRUE))
      
      plot_ly(data = Filter_ClosedOpp, y = Filter_ClosedOpp$PerUnitPrice,color = Filter_ClosedOpp$Winning.Competitor, type = "box")%>%
-       add_trace(x = WestDF$Winning.Competitor ,y = WestDF$cnt,showlegend=FALSE,text=round(WestDF$cnt,0), mode="text",hoverinfo='none',textposition = "top right") %>%
-       layout(yaxis=list(title = "Unit Price (INR)"))
-      
-     
-   })
+       layout(yaxis=list(title = "Unit Price (INR)"),
+              annotations = list(x = WestDF$Winning.Competitor , y = WestDF$cnt, text = round(WestDF$cnt,0),
+                                 xanchor = 'center', yanchor = 'bottom', 
+                                 showarrow = FALSE))
+       })
    output$priceComparison2<- renderPlotly({
      
      #Dt$Topcomp=vapply(strsplit(Dt$Topcomp, ","), function(x) paste(unique(x), collapse = ","), character(1L))
@@ -434,6 +434,11 @@ shinyServer(function(input, output,session) {
      if(!is.null(input$SelRegion_Pr1)){
        Filter_ClosedOpp = subset(Filter_ClosedOpp,Filter_ClosedOpp$Region %in% input$SelRegion_Pr1)
      }
+     
+     WestDF = Filter_ClosedOpp%>%
+       group_by(Winning.Competitor)%>%
+       summarise(cnt=median(PerUnitPrice,na.rm=TRUE))
+     
      plot_ly(data = Filter_ClosedOpp, y = Filter_ClosedOpp$PerUnitPrice,x=Filter_ClosedOpp$Speed, color = Filter_ClosedOpp$Winning.Competitor, type = "box") %>%
        layout(boxmode = "group") %>%
        layout(xaxis=list(title = "Speed"),yaxis=list(title = "Unit Price (INR)"))
@@ -490,11 +495,21 @@ shinyServer(function(input, output,session) {
      #   group_by(Winning.Competitor)%>%
      #   summarise(cnt=median(PerUnitPrice,na.rm=TRUE))
      
-     plot_ly(x = Filter_ClosedOpp$Winning.Competitor, y = Filter_ClosedOpp$cnt, color = Filter_ClosedOpp$Winning.Competitor
-             ,type="bar") %>%
-       add_trace(x = Filter_ClosedOpp$Winning.Competitor ,y = Filter_ClosedOpp$cnt,showlegend=FALSE,text=round(Filter_ClosedOpp$cnt,0),
-                 mode="text",hoverinfo='none',textposition = "top middle") %>%
-                   layout(yaxis=list(title="Quantity"),xaxis=list(title="Company"))
-     
+     plot_ly(data=Filter_ClosedOpp,x = Filter_ClosedOpp$Winning.Competitor, y = Filter_ClosedOpp$cnt, color = Filter_ClosedOpp$Winning.Competitor,
+             text=round(Filter_ClosedOpp$cnt,0),type="bar") %>%
+       #add_trace(x = Filter_ClosedOpp$Winning.Competitor ,y = Filter_ClosedOpp$cnt,showlegend=FALSE,
+        #         mode="text",hoverinfo='none',textposition = "top middle") %>%
+                   layout(yaxis=list(title="Quantity"),xaxis=list(title="Company"),
+                          annotations = list(x = ~Winning.Competitor , y = ~cnt, text = ~cnt,
+                                             xanchor = 'center', yanchor = 'bottom', 
+                                             showarrow = FALSE))
+     # 
+     # plot_ly(data = reactdataConSum(),x = ~Region ,y = ~cnt,showlegend=FALSE,type="bar",text=~cnt,color = ~Region,colors = Regionpal)%>%
+     #   layout(xaxis=list(title = "Region"),yaxis=list(title = "Quantity"))%>%
+     #   layout(title="Opportunity Won Region Wise",
+     #          annotations = list(x = ~Region , y = ~cnt, text = ~cnt,
+     #                             xanchor = 'center', yanchor = 'bottom', 
+     #                             showarrow = FALSE))
+     # 
    })
 })
