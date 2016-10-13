@@ -7,10 +7,10 @@
 #    http://shiny.rstudio.com/
 #
 
-library(shiny)
 
 # Define server logic required to draw a histogram
 shinyServer(function(input, output,session) {
+
   #Total Qty of Opportunities Open + Closed 
   reactdataContot=reactive({ 
     subcon=ConsolidatedOpp%>%
