@@ -18,6 +18,11 @@ if (dir.exists("D:/Official/09_Analytics/KEICRMreporting/CRMReporting/Data"))
   setwd("D:/Official/09_Analytics/KEICRMreporting/CRMReporting/Data")
 }
 
+if (dir.exists("/media/chilambuselvan/Studies & OS files/Official/KEICRMreporting/CRMReporting/Data"))
+{
+  setwd("/media/chilambuselvan/Studies & OS files/Official/KEICRMreporting/CRMReporting/Data")
+}
+
 if (dir.exists("D:/Reporting/KEICRMreporting/CRMReporting/Data"))
 {
   setwd("D:/Reporting/KEICRMreporting/CRMReporting/Data")
